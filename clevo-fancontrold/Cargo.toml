@@ -1,0 +1,15 @@
+[package]
+name = "clevo-fancontrold"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+clevo-fancontrol = { path = "../clevo-fancontrol" }
+libc = { version = "0.2.171" }
+x86 = { version = "0.52.0" }
+machine-info = { version = "1.0.9" }
+interprocess = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+derive_more = { workspace = true }

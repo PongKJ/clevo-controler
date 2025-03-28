@@ -1,0 +1,14 @@
+[workspace]
+members = ["clevo-fancontrol", "clevo-fancontrold"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+interprocess = { version = "2.2.3", features = ["tokio", "async"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+thiserror = "2.0.12"
+derive_more = { version = "2.0.1", features = ["from"] }
