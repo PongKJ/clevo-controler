@@ -1,1 +1,3 @@
-pub mod hw;
+pub mod hardware;
+pub use hardware::field;
+pub mod workload;

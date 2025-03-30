@@ -1,4 +1,4 @@
-use crate::hardware::accessor::ec;
+use crate::excutor::accessor::ec;
 
 const EC_CPU_FAN_RPM_HI_ADDR: u8 = 0xD0;
 const EC_CPU_FAN_RPM_LO_ADDR: u8 = 0xD1;

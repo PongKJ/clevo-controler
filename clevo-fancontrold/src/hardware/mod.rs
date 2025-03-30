@@ -1,10 +1,16 @@
-pub mod accessor;
-pub mod peripheries;
-pub mod workers;
+pub mod cpu;
+pub mod gpu;
 
-use clevo_fancontrol::domain::hw::{self, field::hwname};
+// pub trait Hardware {
+//     fn get_desc(&self) -> String;
+//     fn get_freq(&self, index: HardwareIndex) -> Freq;
+//     fn get_temp(&self, index: HardwareIndex) -> Temp;
+//     fn get_power(&self, index: HardwareIndex) -> Power;
+//     fn get_usage(&self, index: HardwareIndex) -> Usage;
+//     fn get_fan_speed(&self, index: HardwareIndex) -> FanSpeed;
 
-pub trait Hardware {
-    fn get_device_name() -> hwname::HwName;
-    fn get_device_info() -> hw::HwInfo;
-}
+// Optionally, you can define methods to set target values
+// fn set_target_freq(&self, index: HardwareIndex, target_freq: TargetFreq);
+// fn set_target_power(&self, index: HardwareIndex, target_power: TargetPower);
+// fn set_target_fan_speed(&self, index: HardwareIndex, target_fan_speed: TargetFanSpeed);
+// }

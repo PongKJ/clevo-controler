@@ -1,3 +1,7 @@
+pub mod pid;
+pub mod range;
+pub mod table;
+
 #[derive(Debug)]
 enum ControlMethod {
     TableLook,
@@ -15,7 +19,5 @@ impl HwCtrl {
         Self { expect_temp }
     }
 
-    pub fn run(&mut self) {
-
-    }
+    pub fn run(&mut self) {}
 }

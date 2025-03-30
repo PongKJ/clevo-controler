@@ -1,13 +1,7 @@
+use clevo_fancontrold::service::core::Service;
 use std::thread;
-
-use clevo_fancontrold::hardware::peripheries::fan::{self, FanIndex};
 fn main() {
-    let fan = fan::FanCtler::new();
-    // fan.set_fan_speed(0.6, FanIndex::CPU);
-    fan.set_fan_auto(FanIndex::GPU);
-    loop {
-        let rpm = fan.get_fan_rpm(FanIndex::GPU);
-        dbg!(rpm);
-        thread::sleep(std::time::Duration::from_secs(1));
-    }
+    let mut service = Service::new("clevo-fancontrold.sock").expect("Failed to create service");
+    let handle = service.spawn().expect("Failed to spawn service");
+    handle.join().expect("Service thread has panicked");
 }

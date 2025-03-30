@@ -1,11 +1,7 @@
-use clevo_fancontrol::commu::localstream::LocalStream;
+use clevo_fancontrol::domain::hardware::cpu::Cpu;
+use clevo_fancontrol::service::core::Service;
 use clevo_fancontrol::ui::tray::MyTray;
-use interprocess::{
-    TryClone,
-    local_socket::{GenericFilePath, GenericNamespaced, Stream, prelude::*},
-};
-use ksni::{Handle, TrayMethods};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use ksni::Handle;
 
 async fn show_tray_status(tray: &Handle<MyTray>) {
     // Simulate some work
@@ -21,12 +17,17 @@ async fn show_tray_status(tray: &Handle<MyTray>) {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let tray = MyTray::new(0, false);
-    let handle = tray.spawn().await.unwrap();
-    let mut local_stream = LocalStream::new("clevo-fancontrold.sock".to_string()).unwrap();
-    local_stream.write(b"Hello\n").unwrap();
-    let msg = local_stream.read().unwrap();
-    dbg!(msg);
+    // let tray = MyTray::new(0, false);
+    let socket_name =
+        dotenv::var("SOCKET_NAME").unwrap_or_else(|_| "clevo-fancontrold.sock".to_string());
+    let mut service = Service::new(socket_name.as_str()).expect("Failed to create service");
+    let cpu = Cpu::new();
+    service.add_hardware(Box::new(cpu)).unwrap();
+    service.spawn().unwrap();
+    loop {
+        service.print_hardware_status();
+        std::thread::sleep(std::time::Duration::from_secs(5));
+    }
 
     // tray.update(|tray: &mut MyTray| {
     //     tray.checked = false;
@@ -36,5 +37,5 @@ async fn main() {
     //     show_tray_status(&handle).await
     // });
     // Run forever
-    std::future::pending().await
+    // std::future::pending().await
 }
