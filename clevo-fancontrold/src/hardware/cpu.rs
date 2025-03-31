@@ -1,12 +1,9 @@
-use clevo_fancontrol::{
-    communicate::proto::HardwareIndex,
-    domain::hardware::field::{
-        fan_speed::{FanSpeed, TargetFanSpeed},
-        freq::{Freq, TargetFreq},
-        power::{Power, TargetPower},
-        temp::Temp,
-        usage::Usage,
-    },
+use lib::field::{
+    fan_speed::{FanSpeed, TargetFanSpeed},
+    freq::{Freq, TargetFreq},
+    power::{Power, TargetPower},
+    temp::Temp,
+    usage::Usage,
 };
 
 #[derive(Debug)]
@@ -16,5 +13,4 @@ impl Cpu {
     pub fn new() -> Self {
         Cpu {}
     }
-    
 }

@@ -1,9 +1,9 @@
-use crate::domain::hardware::field::FieldError;
-use serde::{Deserialize, Serialize};
+use crate::field::FieldError;
+use bincode::{Decode, Encode};
 
 type Result<T> = std::result::Result<T, FieldError>;
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct FanSpeed {
     duty: u32, // Fan duty cycle in percentage
     rpm: u32,  //Fan rpm
@@ -21,7 +21,15 @@ impl FanSpeed {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl TryFrom<&[u8]> for FanSpeed {
+    type Error = FieldError;
+    fn try_from(value: &[u8]) -> Result<Self> {
+        let (value, _) = bincode::decode_from_slice(value, bincode::config::standard())?;
+        Ok(value)
+    }
+}
+
+#[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct TargetFanSpeed {
     duty: u32, // Fan duty cycle in percentage
 }

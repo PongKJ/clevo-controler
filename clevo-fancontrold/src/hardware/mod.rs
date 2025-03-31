@@ -1,16 +1,38 @@
 pub mod cpu;
 pub mod gpu;
 
-// pub trait Hardware {
-//     fn get_desc(&self) -> String;
-//     fn get_freq(&self, index: HardwareIndex) -> Freq;
-//     fn get_temp(&self, index: HardwareIndex) -> Temp;
-//     fn get_power(&self, index: HardwareIndex) -> Power;
-//     fn get_usage(&self, index: HardwareIndex) -> Usage;
-//     fn get_fan_speed(&self, index: HardwareIndex) -> FanSpeed;
+use lib::field::FieldError;
+use lib::{
+    proto::MsgCommand,
+    stream::{SocketStream, StreamError},
+};
 
-// Optionally, you can define methods to set target values
-// fn set_target_freq(&self, index: HardwareIndex, target_freq: TargetFreq);
-// fn set_target_power(&self, index: HardwareIndex, target_power: TargetPower);
-// fn set_target_fan_speed(&self, index: HardwareIndex, target_fan_speed: TargetFanSpeed);
-// }
+#[derive(Debug)]
+pub enum HardwareError {
+    FieldError(String),  // Invalid field
+    QueryError(String),  // Error during querying hardware
+    OperationNotSupport, // Operation not supported by the hardware
+    BadReply,
+}
+
+impl From<FieldError> for HardwareError {
+    fn from(err: FieldError) -> Self {
+        HardwareError::FieldError(String::from(err))
+    }
+}
+impl From<StreamError> for HardwareError {
+    fn from(err: StreamError) -> Self {
+        HardwareError::QueryError(format!("Stream error: {}", err))
+    }
+}
+
+type Result<T> = std::result::Result<T, HardwareError>;
+
+#[allow(unused_variables)]
+pub trait Hardware {
+    // Refresh the hardware status
+    fn refresh_status(&mut self, command: &MsgCommand, data: &String) -> Result<()> {
+        // Default implementation does nothing
+        Ok(())
+    }
+}

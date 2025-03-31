@@ -1,4 +1,4 @@
-use crate::domain::field::{fan_speed::TargetFanSpeed, temp::Temp};
+use lib::field::{fan_speed::TargetFanSpeed, temp::Temp};
 use std::collections::HashMap;
 
 pub struct ControlByTable {

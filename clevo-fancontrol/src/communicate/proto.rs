@@ -1,85 +1,99 @@
-// TODO: Maybe rpc?
-use crate::domain::field::fan_speed::{FanSpeed, TargetFanSpeed};
-use crate::domain::field::freq::{Freq, TargetFreq};
-use crate::domain::field::power::Power;
-use crate::domain::field::temp::Temp;
-use crate::domain::field::usage::Usage;
+use crate::communicate::CommuError;
 use serde::{Deserialize, Serialize};
 
-pub trait Msg {
-    fn get_raw_string(&self) -> String;
+use super::stream::SocketStream;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MsgMode {
+    Request,
+    Reply,
+    Notify,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum HardwareIndex {
-    Cpu = 0,
-    Gpu = 1,
-}
-
-// Each request is tagged with an index to identify the device
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Request {
-    // Get
-    GetDesc(HardwareIndex), // Get desciption of the device, tag this device by a index
-    GetFreq(HardwareIndex),
-    GetUsage(HardwareIndex),
-    GetTemp(HardwareIndex),
-    GetPower(HardwareIndex),
-    GetFanSpeed(HardwareIndex),
-
-    // Set
-    SetFreq(HardwareIndex, TargetFreq), // Set frequency range in MHz (min,max)
-    SetFanSpeed(HardwareIndex, TargetFanSpeed), // Set fan speed in percentage
-}
-
-impl From<Request> for String {
-    fn from(request: Request) -> Self {
-        serde_json::to_string(&request).unwrap() // Should not failed
-    }
-}
-
-impl From<String> for Request {
-    fn from(value: String) -> Self {
-        serde_json::from_str(&value).unwrap() // Should not failed
-    }
-}
-
-impl Msg for Request {
-    fn get_raw_string(&self) -> String {
-        String::from(self.clone())
-    }
+pub enum MsgError {
+    None,                         // No error
+    UnsupportedOperation(String), // Unsupported operation
+    InvalidParameter(String),     // Invalid parameter
+    DeviceError(String),          // Device error
+    Timeout(String),              // Timeout error
+    Unknown(String),              // Unknown error
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Reply {
-    // Reply with data
-    Desc(String), // Description of the device
-    Freq(Freq),   // in Mhz
-    Usage(Usage), // in percentage
-    Temp(Temp),   // in Celsius
-    Power(Power), // in watt
-    FanSpeed(FanSpeed),
-
-    NotSupport,
-
-    // Acknowledge
-    Ack,
+pub enum MsgCommand {
+    GetCpuInfo,
+    GetGpuInfo,
+    GetCpuStatus,
+    GetGpuStatus,
+    SetFreq,
+    SetFanSpeed,
+    SetPower,
 }
 
-impl From<String> for Reply {
-    fn from(reply: String) -> Self {
-        serde_json::from_str(&reply).unwrap() //Should not failed
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MsgHeader {
+    pub version: u8,
+    pub timestamp: u64,
+    pub length: usize,
 }
 
-impl From<Reply> for String {
-    fn from(reply: Reply) -> Self {
-        serde_json::to_string(&reply).unwrap() // Should not failed
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MsgPacket {
+    pub mode: MsgMode,
+    pub error: Option<MsgError>,
+    pub sequence: u64, // Unique sequence number for the message
+    pub command: MsgCommand,
 }
 
-impl Msg for Reply {
-    fn get_raw_string(&self) -> String {
-        String::from(self.clone())
+// Msg = MsgHeader + MsgPacket + Payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Msg {
+    pub header: MsgHeader,
+    pub packet: MsgPacket,
+    pub payload: Option<String>, // Optional payload, can be empty
+}
+
+type Result<T> = std::result::Result<T, CommuError>;
+
+pub fn recv_msg(stream: &mut SocketStream) -> Result<Msg> {
+    let msg_header_str = stream.read(size_of::<MsgHeader>())?;
+    let msg_header: MsgHeader = serde_json::from_str(&msg_header_str).unwrap(); // Should not failed
+    dbg!(msg_header.clone());
+    let msg_packet_str = stream.read(size_of::<MsgPacket>())?;
+    let msg_packet: MsgPacket = serde_json::from_str(&msg_packet_str).unwrap(); // Should not failed
+    let payload_length = msg_header.length - size_of::<MsgHeader>() - size_of::<MsgPacket>();
+    let payload = if payload_length > 0 {
+        Some(stream.read(payload_length)?)
+    } else {
+        None
+    };
+    Ok(Msg {
+        header: msg_header,
+        packet: msg_packet,
+        payload, // Can be None if no payload
+    })
+}
+
+pub fn send_msg(
+    stream: &mut SocketStream,
+    msg_packet: &MsgPacket,
+    payload: &Option<String>,
+) -> Result<()> {
+    let msg_header = MsgHeader {
+        version: 1, // Version of the message protocol
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u64, // Current timestamp in seconds
+        length: size_of::<MsgPacket>() + if let Some(p) = payload { p.len() } else { 0 }, // Total length of the message
+    };
+    let msg_header_str = serde_json::to_string(&msg_header).unwrap(); // Should not failed
+    let msg_packet_str = serde_json::to_string(msg_packet).unwrap(); // Should not failed
+    stream.write(&msg_header_str)?;
+    stream.write(&msg_packet_str)?;
+    if let Some(payload) = payload {
+        stream.write(payload)?;
     }
+    Ok(())
 }

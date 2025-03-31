@@ -1,9 +1,7 @@
-use {
-    interprocess::local_socket::{
-        GenericFilePath, GenericNamespaced, ListenerOptions, Stream, prelude::*,
-    },
-    std::io::{BufReader, prelude::*},
+use interprocess::local_socket::{
+    GenericFilePath, GenericNamespaced, ListenerOptions, Stream, prelude::*,
 };
+use std::io::prelude::*;
 #[derive(Debug)]
 pub enum StreamError {
     Io(String),
@@ -37,18 +35,27 @@ impl SocketStream {
             name.to_fs_name::<GenericFilePath>()?
         };
         let stream = Stream::connect(name)?;
-        Ok(stream)
+        Ok(SocketStream(stream))
     }
 
-    pub fn write(&mut self, buffer: &str) -> Result<()> {
-        self.0.write_vectored(buffer);
-        Ok(())
+    pub fn write(&mut self, buffer: &[u8]) -> Result<()> {
+        let writren_bytes = self.0.write(buffer)?;
+        if writren_bytes == buffer.len() {
+            println!("Wrote {} bytes to the stream", writren_bytes);
+            Ok(())
+        } else {
+            Err(StreamError::Other(format!(
+                "Failed to write all bytes. Expected: {}, Written: {}",
+                buffer.len(),
+                writren_bytes
+            )))
+        }
     }
 
-    pub fn read(&mut self, length: usize) -> Result<String> {
+    pub fn read(&mut self, length: usize) -> Result<Vec<u8>> {
         let mut msg = vec![0; length]; // Pre-allocate a buffer of the specified length
         self.0.read_exact(&mut msg)?;
-        Ok(String::from_utf8(msg).unwrap())
+        Ok(msg)
     }
 }
 
@@ -63,11 +70,11 @@ impl StreamListener {
         };
         let opts = ListenerOptions::new().name(socket_name);
         let listener = opts.create_sync()?;
-        Ok(listener)
+        Ok(StreamListener(listener))
     }
 
     pub fn accept(&mut self) -> Result<SocketStream> {
-        match self.listener.accept() {
+        match self.0.accept() {
             Ok(stream) => {
                 let stream_client = SocketStream(stream);
                 Ok(stream_client)

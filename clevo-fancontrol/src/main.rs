@@ -23,11 +23,8 @@ async fn main() {
     let mut service = Service::new(socket_name.as_str()).expect("Failed to create service");
     let cpu = Cpu::new();
     service.add_hardware(Box::new(cpu)).unwrap();
-    service.spawn().unwrap();
-    loop {
-        service.print_hardware_status();
-        std::thread::sleep(std::time::Duration::from_secs(5));
-    }
+    let handle = service.spawn().unwrap();
+    handle.join().unwrap();
 
     // tray.update(|tray: &mut MyTray| {
     //     tray.checked = false;
