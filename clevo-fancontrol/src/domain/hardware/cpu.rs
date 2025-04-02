@@ -25,33 +25,8 @@ type Result<T> = std::result::Result<T, HardwareError>;
 impl Hardware for Cpu {
     fn refresh_status(&mut self, command: &MsgCommand, data: &String) -> Result<()> {
         match command {
-            MsgCommand::GetCpuDesc => {
+            MsgCommand::GetStatus => {
                 self.desc = data.clone();
-                Ok(())
-            }
-            MsgCommand::GetCpuFreq => {
-                let freq = Freq::try_from(data.as_bytes())?;
-                self.freq = freq;
-                Ok(())
-            }
-            MsgCommand::GetCpuUsage => {
-                let usage = Usage::try_from(data.as_bytes())?;
-                self.usage = usage;
-                Ok(())
-            }
-            MsgCommand::GetCpuTemp => {
-                let temp = Temp::try_from(data.as_bytes())?;
-                self.temp = temp;
-                Ok(())
-            }
-            MsgCommand::GetCpuPower => {
-                let power = Power::try_from(data.as_bytes())?;
-                self.power = power;
-                Ok(())
-            }
-            MsgCommand::GetCpuFanSpeed => {
-                let fan_speed = FanSpeed::try_from(data.as_bytes())?;
-                self.fan_speed = fan_speed;
                 Ok(())
             }
             _ => Err(HardwareError::BadReply),

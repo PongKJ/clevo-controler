@@ -1,6 +1,9 @@
 use crate::domain::hardware::Hardware;
+use lib::field::HardwareList;
 use lib::proto::ProtoError;
 use lib::proto::recv_msg;
+use lib::proto::send_msg;
+use lib::proto::{MsgCommand, MsgMode, MsgPacket};
 use lib::stream::SocketStream;
 
 use std::sync::Arc;
@@ -41,8 +44,32 @@ impl Service {
         let socket_stream_clone = Arc::clone(&self.socket_stream);
         let interval = self.config.interval;
         let handle = std::thread::spawn(move || {
+            // get hardware list first
+            let packet = MsgPacket {
+                mode: MsgMode::Request,
+                error: None,
+                sequence: 0,
+                index: 0,
+                command: MsgCommand::GetHardwareList,
+            };
+            send_msg(&mut socket_stream_clone.lock().unwrap(), &packet, &None).unwrap();
+            let reply_msg = recv_msg(&mut socket_stream_clone.lock().unwrap()).unwrap();
+            let (hardware_list, _): (HardwareList, _) = bincode::decode_from_slice(
+                reply_msg.payload.as_deref().unwrap_or(&[]),
+                bincode::config::standard(),
+            )
+            .unwrap();
+            dbg!(&hardware_list);
             loop {
                 let mut socket_stream_clone = socket_stream_clone.lock().unwrap();
+                let packet = MsgPacket {
+                    mode: MsgMode::Request,
+                    error: None,
+                    sequence: 0,
+                    index: 0,
+                    command: MsgCommand::GetStatus,
+                };
+                send_msg(&mut socket_stream_clone, &packet, &None);
                 let msg = recv_msg(&mut socket_stream_clone).expect("Failed to receive message");
                 dbg!(&msg);
                 match msg.packet.command {

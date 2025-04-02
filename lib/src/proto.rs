@@ -1,4 +1,4 @@
-use std::usize;
+use std::{default, fmt::Display};
 
 use crate::{
     field::FieldError,
@@ -43,47 +43,38 @@ impl From<bincode::error::EncodeError> for ProtoError {
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode)]
 pub enum MsgMode {
     Request,
-    Response,
+    Reply,
     Notify,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum MsgError {
     UnsupportedOperation(String), // Unsupported operation
-    InvalidParameter(String),     // Invalid parameter
+    InvalidCommand(String),       // Invalid parameter
     DeviceError(String),          // Device error
     Timeout(String),              // Timeout error
+    ServerError(String),          // Server error
     Unknown(String),              // Unknown error
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum MsgCommand {
-    // CPU
-    GetCpuDesc,
-    GetCpuFreq,
-    GetCpuTemp,
-    GetCpuUsage,
-    GetCpuPower,
-    GetCpuFanSpeed,
+    GetHardwareList, // get current enabled hardwares' index
+    GetStatus,
 
-    SetCpuFreq,
-    SetCpuPower,
-    SetCpuFanSpeed,
-
-    // GPU
-    GetGpuDesc,
-    GetGpuFreq,
-    GetGpuTemp,
-    GetGpuUsage,
-    GetGpuPower,
-    GetGpuFanSpeed,
-
-    SetGpuFreq,
-    SetGpuFanSpeed,
+    SetFreq,
+    SetFanSpeed,
 }
 
-struct Test {
-    value: u8,
+impl Display for MsgCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MsgCommand::GetHardwareList => write!(f, "GetHardwareList"),
+            MsgCommand::GetStatus => write!(f, "GetCpuStatus"),
+            MsgCommand::SetFreq => write!(f, "SetCpuFreq"),
+            MsgCommand::SetFanSpeed => write!(f, "SetCpuFanSpeed"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -102,6 +93,13 @@ impl MsgHeader {
         + std::mem::size_of::<u8>() // Size of `length`
         + std::mem::size_of::<usize>() // Size of `some_other_field`
     }
+
+    pub fn update_timestamp(&mut self) {
+        self.timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+    }
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -109,6 +107,7 @@ pub struct MsgPacket {
     pub mode: MsgMode,
     pub error: Option<MsgError>,
     pub sequence: u64, // Unique sequence number for the message
+    pub index: u8,     // hardware index
     pub command: MsgCommand,
 }
 
@@ -130,7 +129,6 @@ pub fn recv_msg(stream: &mut SocketStream) -> Result<Msg> {
     )?;
     dbg!(&msg_header);
     let msg_packet_encoded = stream.read(msg_header.packet_length as usize)?;
-    dbg!(&msg_packet_encoded);
     let (msg_packet, _): (MsgPacket, _) =
         bincode::decode_from_slice(msg_packet_encoded.as_slice(), bincode::config::standard())?;
     let payload = if msg_header.payload_length > 0 {
@@ -148,20 +146,10 @@ pub fn recv_msg(stream: &mut SocketStream) -> Result<Msg> {
 pub fn send_msg(
     stream: &mut SocketStream,
     msg_packet: &MsgPacket,
-    payload: &Option<String>,
+    payload: &Option<Vec<u8>>,
 ) -> Result<()> {
-    let payload_encoded: Option<Vec<u8>> = if let Some(p) = payload {
-        Some(bincode::encode_to_vec(p, bincode::config::standard()).unwrap())
-    } else {
-        None
-    };
-    let payload_length = if let Some(p) = &payload_encoded {
-        p.len()
-    } else {
-        0
-    };
+    let payload_length = if let Some(p) = &payload { p.len() } else { 0 };
     let msg_packet_encoded = bincode::encode_to_vec(msg_packet, bincode::config::standard())?;
-    dbg!(&msg_packet_encoded);
     let msg_header = MsgHeader {
         version: 1, // Version of the message protocol
         timestamp: std::time::SystemTime::now()
@@ -172,15 +160,14 @@ pub fn send_msg(
         payload_length,
     };
     dbg!(&msg_header);
-    let msg_header_str = bincode::encode_to_vec(
+    let msg_header_encoded = bincode::encode_to_vec(
         &msg_header,
         bincode::config::standard().with_fixed_int_encoding(),
     )?;
-    dbg!(&msg_header_str);
-    stream.write(&msg_header_str)?;
+    stream.write(&msg_header_encoded)?;
     stream.write(&msg_packet_encoded)?;
-    if let Some(payload_encoded) = payload_encoded {
-        stream.write(payload_encoded.as_slice())?;
+    if let Some(payload) = payload {
+        stream.write(payload.as_slice())?;
     }
     Ok(())
 }

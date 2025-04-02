@@ -4,6 +4,8 @@ pub mod freq;
 pub mod power;
 pub mod temp;
 pub mod usage;
+use bincode::{Decode, Encode};
+use std::collections::HashMap;
 use std::fmt::Display;
 
 #[derive(Debug)]
@@ -41,3 +43,36 @@ impl From<bincode::error::EncodeError> for FieldError {
         FieldError::ParseError(format!("encode error: {}", err))
     }
 }
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CpuStatus {
+    pub freq: freq::Freq,
+    pub power: power::Power,
+    pub temp: temp::Temp,
+    pub usage: usage::Usage,
+    pub fan_speed: fan_speed::FanSpeed,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GpuStatus {
+    pub freq: freq::Freq,
+    pub power: power::Power,
+    pub temp: temp::Temp,
+    pub usage: usage::Usage,
+    pub fan_speed: fan_speed::FanSpeed,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct SetCpuFreq(pub freq::TargetFreq);
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct SetFanSpeed(pub fan_speed::TargetFanSpeed);
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct SetGpuFreq(pub freq::TargetFreq);
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct SetGpuFanSpeed(pub fan_speed::TargetFanSpeed);
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct HardwareList(pub HashMap<u8, String>);
