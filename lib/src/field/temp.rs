@@ -14,6 +14,9 @@ impl Temp {
     pub fn get_value(&self) -> f32 {
         self.value
     }
+    pub fn set_value(&mut self, value: f32) {
+        self.value = value;
+    }
 }
 
 impl TryFrom<&[u8]> for Temp {

@@ -1,4 +1,4 @@
-use crate::excutor::accessor::ec;
+use crate::lowlevel::accessor::ec;
 
 const EC_CPU_FAN_RPM_HI_ADDR: u8 = 0xD0;
 const EC_CPU_FAN_RPM_LO_ADDR: u8 = 0xD1;
@@ -14,6 +14,12 @@ pub struct FanCtler {
 pub enum FanIndex {
     CPU = 1,
     GPU = 2,
+}
+
+impl Default for FanCtler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FanCtler {

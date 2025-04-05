@@ -46,10 +46,10 @@ impl From<bincode::error::EncodeError> for FieldError {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CpuStatus {
-    pub freq: freq::Freq,
+    pub freq: Vec<freq::Freq>,
+    pub usage: Vec<usage::Usage>,
     pub power: power::Power,
     pub temp: temp::Temp,
-    pub usage: usage::Usage,
     pub fan_speed: fan_speed::FanSpeed,
 }
 

@@ -1,5 +1,5 @@
 [workspace]
-members = ["clevo-fancontrol", "clevo-fancontrold", "lib"]
+members = ["clevo-controler", "clevo-controlerd", "lib"]
 resolver = "3"
 
 [workspace.package]

@@ -10,6 +10,12 @@ const EC_WRITE_CMD: u8 = 0x81;
 const EC_SC_IBF_INDEX: u8 = 1;
 const EC_SC_OBF_INDEX: u8 = 0;
 
+impl Default for EcAccessor {
+    fn default() -> Self {
+        EcAccessor::new()
+    }
+}
+
 impl EcAccessor {
     pub fn new() -> Self {
         let ec_accessor = EcAccessor {};

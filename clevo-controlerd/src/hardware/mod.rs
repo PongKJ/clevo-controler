@@ -48,7 +48,8 @@ pub trait Hardware {
 
     fn handle_request(&mut self, msg: &Msg) -> Result<Option<Vec<u8>>, MsgError> {
         Err(MsgError::UnsupportedOperation(format!(
-            "Operation not supported by the hardware"
+            "Operation not supported by the hardware:{}",
+            msg.packet.command
         )))
     }
 }

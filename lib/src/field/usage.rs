@@ -14,6 +14,9 @@ impl Usage {
     pub fn get_value(&self) -> u32 {
         self.value
     }
+    pub fn set_value(&mut self, value: u32) {
+        self.value = value;
+    }
 }
 
 impl TryFrom<&[u8]> for Usage {

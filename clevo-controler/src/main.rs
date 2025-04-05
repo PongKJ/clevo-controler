@@ -1,6 +1,4 @@
-use clevo_fancontrol::domain::hardware::cpu::Cpu;
-use clevo_fancontrol::service::core::Service;
-use clevo_fancontrol::ui::tray::MyTray;
+use clevo_controler::{domain::hardware::cpu::Cpu, service::core::Service, ui::tray::MyTray};
 use ksni::Handle;
 
 async fn show_tray_status(tray: &Handle<MyTray>) {
@@ -19,7 +17,7 @@ async fn show_tray_status(tray: &Handle<MyTray>) {
 async fn main() {
     // let tray = MyTray::new(0, false);
     let socket_name =
-        dotenv::var("SOCKET_NAME").unwrap_or_else(|_| "clevo-fancontrold.sock".to_string());
+        dotenv::var("SOCKET_NAME").unwrap_or_else(|_| "clevo-controler.sock".to_string());
     let mut service = Service::new(socket_name.as_str()).expect("Failed to create service");
     let cpu = Cpu::new();
     service.add_hardware(Box::new(cpu)).unwrap();

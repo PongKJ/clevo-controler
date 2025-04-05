@@ -1,5 +1,7 @@
 use crate::domain::hardware::Hardware;
+use lib::field::CpuStatus;
 use lib::field::HardwareList;
+use lib::field::freq::Freq;
 use lib::proto::ProtoError;
 use lib::proto::recv_msg;
 use lib::proto::send_msg;
@@ -72,6 +74,12 @@ impl Service {
                 send_msg(&mut socket_stream_clone, &packet, &None);
                 let msg = recv_msg(&mut socket_stream_clone).expect("Failed to receive message");
                 dbg!(&msg);
+                let (cpu_status, _): (CpuStatus, _) = bincode::decode_from_slice(
+                    msg.payload.as_deref().unwrap_or(&[]),
+                    bincode::config::standard(),
+                )
+                .unwrap();
+                dbg!(&cpu_status);
                 match msg.packet.command {
                     _ => {
                         // You can add logic to handle different commands

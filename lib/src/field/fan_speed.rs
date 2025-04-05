@@ -19,6 +19,9 @@ impl FanSpeed {
     pub fn get_rpm(&self) -> u32 {
         self.rpm
     }
+    pub fn set_rpm(&mut self, rpm: u32) {
+        self.rpm = rpm;
+    }
 }
 
 impl TryFrom<&[u8]> for FanSpeed {
