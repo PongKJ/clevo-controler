@@ -1,2 +1,2 @@
 pub mod accessor;
-pub mod components;
+pub mod middleware;

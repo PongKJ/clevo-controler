@@ -1,7 +1,6 @@
-use crate::domain::hardware::Hardware;
+use crate::domain::component::Component;
+use lib::field::ComponentList;
 use lib::field::CpuStatus;
-use lib::field::HardwareList;
-use lib::field::freq::Freq;
 use lib::proto::ProtoError;
 use lib::proto::recv_msg;
 use lib::proto::send_msg;
@@ -20,7 +19,7 @@ pub struct ServiceConfig {
 
 pub struct Service {
     config: ServiceConfig,
-    hardwares: Arc<Mutex<Vec<Box<dyn Hardware + Send + Sync>>>>,
+    hardwares: Arc<Mutex<Vec<Box<dyn Component + Send + Sync>>>>,
     socket_stream: Arc<Mutex<SocketStream>>,
 }
 
@@ -35,11 +34,20 @@ impl Service {
             socket_stream: Arc::new(Mutex::new(socket_stream)),
         })
     }
-    pub fn add_hardware(&mut self, hardware: Box<dyn Hardware + Send + Sync>) -> Result<()> {
+    pub fn add_hardware(&mut self, hardware: Box<dyn Component + Send + Sync>) -> Result<()> {
         let mut hardwares = self.hardwares.lock().unwrap();
         hardwares.push(hardware);
         Ok(())
     }
+
+    // INFO:
+    // 1. Service call components to refresh their status
+    // 2. components return a Msg
+    // 3. Service send the Msg to the socket stream
+    // 4. Service receive the reply from the socket stream
+    // 5. Service divide the reply by index and dispach them to the sepecific components
+
+    // TODO: add index field
 
     pub fn spawn(&mut self) -> Result<JoinHandle<()>> {
         let hardwares_clone = Arc::clone(&self.hardwares);
@@ -52,11 +60,11 @@ impl Service {
                 error: None,
                 sequence: 0,
                 index: 0,
-                command: MsgCommand::GetHardwareList,
+                command: MsgCommand::GetComponentList,
             };
             send_msg(&mut socket_stream_clone.lock().unwrap(), &packet, &None).unwrap();
             let reply_msg = recv_msg(&mut socket_stream_clone.lock().unwrap()).unwrap();
-            let (hardware_list, _): (HardwareList, _) = bincode::decode_from_slice(
+            let (hardware_list, _): (ComponentList, _) = bincode::decode_from_slice(
                 reply_msg.payload.as_deref().unwrap_or(&[]),
                 bincode::config::standard(),
             )

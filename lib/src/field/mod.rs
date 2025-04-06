@@ -46,8 +46,8 @@ impl From<bincode::error::EncodeError> for FieldError {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CpuStatus {
-    pub freq: Vec<freq::Freq>,
-    pub usage: Vec<usage::Usage>,
+    pub freq: freq::Freq,
+    pub usage: usage::Usage,
     pub power: power::Power,
     pub temp: temp::Temp,
     pub fan_speed: fan_speed::FanSpeed,
@@ -75,4 +75,4 @@ pub struct SetGpuFreq(pub freq::TargetFreq);
 pub struct SetGpuFanSpeed(pub fan_speed::TargetFanSpeed);
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct HardwareList(pub HashMap<u8, String>);
+pub struct ComponentList(pub HashMap<u8, String>);

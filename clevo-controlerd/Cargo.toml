@@ -8,6 +8,8 @@ lib = { path = "../lib" }
 libc = { version = "0.2.171" }
 x86 = { version = "0.52.0" }
 sysinfo = { version = "0.34.2" }
+nvml-wrapper = { version = "0.10.0" }
+once_cell = { version = "1.21.3" }
 interprocess = { workspace = true }
 bincode = { workspace = true }
 thiserror = { workspace = true }

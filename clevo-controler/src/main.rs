@@ -1,4 +1,4 @@
-use clevo_controler::{domain::hardware::cpu::Cpu, service::core::Service, ui::tray::MyTray};
+use clevo_controler::{domain::component::cpu::Cpu, service::core::Service, ui::tray::MyTray};
 use ksni::Handle;
 
 async fn show_tray_status(tray: &Handle<MyTray>) {

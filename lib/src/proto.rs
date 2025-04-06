@@ -59,7 +59,7 @@ pub enum MsgError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum MsgCommand {
-    GetHardwareList, // get current enabled hardwares' index
+    GetComponentList, // get current enabled hardwares' index
     GetStatus,
 
     SetFreq,
@@ -69,7 +69,7 @@ pub enum MsgCommand {
 impl Display for MsgCommand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MsgCommand::GetHardwareList => write!(f, "GetHardwareList"),
+            MsgCommand::GetComponentList => write!(f, "GetComponentList"),
             MsgCommand::GetStatus => write!(f, "GetCpuStatus"),
             MsgCommand::SetFreq => write!(f, "SetCpuFreq"),
             MsgCommand::SetFanSpeed => write!(f, "SetCpuFanSpeed"),

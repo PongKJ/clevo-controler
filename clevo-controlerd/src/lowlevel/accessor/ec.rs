@@ -47,10 +47,8 @@ impl EcAccessor {
 
     fn poll_ready(&self, addr: u16, bit: u8, value: bool) {
         let mut max_tries = 1000;
-        println!("start poll");
         while max_tries > 0 {
             let status = self.inb(addr);
-            dbg!(status);
             if ((status >> bit) & 1) == value as u8 {
                 return;
             }

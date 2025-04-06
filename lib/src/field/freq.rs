@@ -5,17 +5,17 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct Freq {
-    value: u32, // Frequency in MHz
+    value: Vec<u32>, // Frequency in MHz
 }
 
 impl Freq {
-    pub fn new(value: u32) -> Self {
+    pub fn new(value: Vec<u32>) -> Self {
         Self { value }
     }
-    pub fn get_value(&self) -> u32 {
-        self.value
+    pub fn get_value(&self) -> &Vec<u32> {
+        &self.value
     }
-    pub fn set_value(&mut self, value: u32) {
+    pub fn set_value(&mut self, value: Vec<u32>) {
         self.value = value;
     }
 }

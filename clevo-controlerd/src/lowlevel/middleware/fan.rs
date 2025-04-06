@@ -1,4 +1,5 @@
 use crate::lowlevel::accessor::ec;
+use once_cell::sync::OnceCell;
 
 const EC_CPU_FAN_RPM_HI_ADDR: u8 = 0xD0;
 const EC_CPU_FAN_RPM_LO_ADDR: u8 = 0xD1;
@@ -7,7 +8,7 @@ const EC_GPU_FAN_RPM_LO_ADDR: u8 = 0xD3;
 const EC_SET_FAN_SPEED_CMD: u8 = 0x99;
 const EC_SET_FAN_AUTO_ADDR: u8 = 0xFF;
 
-pub struct FanCtler {
+pub struct Fan {
     ec: ec::EcAccessor,
 }
 
@@ -16,16 +17,21 @@ pub enum FanIndex {
     GPU = 2,
 }
 
-impl Default for FanCtler {
+impl Default for Fan {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl FanCtler {
-    pub fn new() -> Self {
+impl Fan {
+    fn new() -> Self {
         let ec = ec::EcAccessor::new();
-        FanCtler { ec }
+        Fan { ec }
+    }
+
+    pub fn get_instance() -> &'static Self {
+        static INSTANCE: OnceCell<Fan> = OnceCell::new();
+        INSTANCE.get_or_init(Fan::new)
     }
 
     pub fn get_fan_rpm(&self, index: FanIndex) -> u16 {

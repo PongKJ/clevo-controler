@@ -1,5 +1,5 @@
-use crate::hardware::{Hardware, HardwareError};
-use lib::field::HardwareList;
+use crate::component::{Component, ComponentError};
+use lib::field::ComponentList;
 use lib::proto::*;
 use lib::stream::{SocketStream, StreamListener};
 use std::collections::HashMap;
@@ -9,7 +9,7 @@ use std::thread::JoinHandle;
 type Result<T> = std::result::Result<T, ProtoError>;
 
 pub enum ServiceError {
-    HardwareError(HardwareError),
+    ComponentError(ComponentError),
     ProtoError(ProtoError),
 }
 
@@ -19,7 +19,7 @@ pub struct ServiceConfig {
 
 pub struct Service {
     config: ServiceConfig,
-    hardwares: Arc<Mutex<HashMap<u8, Box<dyn Hardware + Send + Sync>>>>,
+    hardwares: Arc<Mutex<HashMap<u8, Box<dyn Component + Send + Sync>>>>,
 }
 
 impl Service {
@@ -35,7 +35,7 @@ impl Service {
     pub fn add_hardware(
         &mut self,
         id: u8,
-        hardware: Box<dyn Hardware + Send + Sync>,
+        hardware: Box<dyn Component + Send + Sync>,
     ) -> Result<()> {
         let mut hardwares = self.hardwares.lock().unwrap();
         hardwares.insert(id, hardware);
@@ -61,13 +61,16 @@ impl Service {
         let socket_name = self.config.socket_name.clone();
         let hardwares_clone = Arc::clone(&self.hardwares);
         fn handle_msg(
-            hardwares: &mut std::sync::MutexGuard<'_, HashMap<u8, Box<dyn Hardware + Send + Sync>>>,
+            hardwares: &mut std::sync::MutexGuard<
+                '_,
+                HashMap<u8, Box<dyn Component + Send + Sync>>,
+            >,
             stream: &mut SocketStream,
             msg: Msg,
         ) {
             match msg.packet.command {
-                MsgCommand::GetHardwareList => {
-                    let mut hardware_list = HardwareList(HashMap::new());
+                MsgCommand::GetComponentList => {
+                    let mut hardware_list = ComponentList(HashMap::new());
                     hardwares.iter().for_each(|(id, hardware)| {
                         hardware_list.0.insert(*id, hardware.get_desc());
                     });

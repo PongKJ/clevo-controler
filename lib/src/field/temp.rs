@@ -4,17 +4,17 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct Temp {
-    value: f32, // Temperature in Celsius
+    value: u64, // Temperature in Celsius
 }
 
 impl Temp {
-    pub fn new(value: f32) -> Self {
+    pub fn new(value: u64) -> Self {
         Self { value }
     }
-    pub fn get_value(&self) -> f32 {
+    pub fn get_value(&self) -> u64 {
         self.value
     }
-    pub fn set_value(&mut self, value: f32) {
+    pub fn set_value(&mut self, value: u64) {
         self.value = value;
     }
 }

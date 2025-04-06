@@ -5,21 +5,17 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct FanSpeed {
-    duty: u32, // Fan duty cycle in percentage
-    rpm: u32,  //Fan rpm
+    rpm: u64, //Fan rpm
 }
 
 impl FanSpeed {
-    pub fn new(duty: u32, rpm: u32) -> Self {
-        Self { duty, rpm }
+    pub fn new(rpm: u64) -> Self {
+        Self { rpm }
     }
-    pub fn get_duty(&self) -> u32 {
-        self.duty
-    }
-    pub fn get_rpm(&self) -> u32 {
+    pub fn get_rpm(&self) -> u64 {
         self.rpm
     }
-    pub fn set_rpm(&mut self, rpm: u32) {
+    pub fn set_rpm(&mut self, rpm: u64) {
         self.rpm = rpm;
     }
 }
