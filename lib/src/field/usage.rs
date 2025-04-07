@@ -4,17 +4,17 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct Usage {
-    value: Vec<u32>, // CPU usage in percentage
+    value: Vec<f32>, // CPU usage in percentage
 }
 
 impl Usage {
-    pub fn new(value: Vec<u32>) -> Self {
+    pub fn new(value: Vec<f32>) -> Self {
         Self { value }
     }
-    pub fn get_value(&self) -> &Vec<u32> {
+    pub fn get_value(&self) -> &Vec<f32> {
         &self.value
     }
-    pub fn set_value(&mut self, value: Vec<u32>) {
+    pub fn set_value(&mut self, value: Vec<f32>) {
         self.value = value;
     }
 }

@@ -5,17 +5,17 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(Debug, Default, Clone, Encode, Decode)]
 pub struct Freq {
-    value: Vec<u32>, // Frequency in MHz
+    value: Vec<u64>, // Frequency in MHz
 }
 
 impl Freq {
-    pub fn new(value: Vec<u32>) -> Self {
+    pub fn new(value: Vec<u64>) -> Self {
         Self { value }
     }
-    pub fn get_value(&self) -> &Vec<u32> {
+    pub fn get_value(&self) -> &Vec<u64> {
         &self.value
     }
-    pub fn set_value(&mut self, value: Vec<u32>) {
+    pub fn set_value(&mut self, value: Vec<u64>) {
         self.value = value;
     }
 }
@@ -43,5 +43,15 @@ impl TargetFreq {
     }
     pub fn get_max(&self) -> u32 {
         self.max
+    }
+
+    pub fn serialize(&self) -> Result<Vec<u8>> {
+        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+    }
+
+    pub fn deserialize(data: &[u8]) -> Result<Self> {
+        bincode::decode_from_slice(data, bincode::config::standard())
+            .map(|(msg, _)| msg)
+            .map_err(|e| FieldError::from(e))
     }
 }

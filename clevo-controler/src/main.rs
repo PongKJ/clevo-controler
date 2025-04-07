@@ -19,10 +19,22 @@ async fn main() {
     let socket_name =
         dotenv::var("SOCKET_NAME").unwrap_or_else(|_| "clevo-controler.sock".to_string());
     let mut service = Service::new(socket_name.as_str()).expect("Failed to create service");
-    let cpu = Cpu::new();
-    service.add_hardware(Box::new(cpu)).unwrap();
-    let handle = service.spawn().unwrap();
-    handle.join().unwrap();
+    let communicator_handle = service
+        .spawn_communicator()
+        .expect("Failed to spawn receiver thread");
+    let refresh_handle = service
+        .spawn_refresher()
+        .expect("Failed to spawn refresher thread");
+    communicator_handle.join().unwrap();
+    refresh_handle.join().unwrap();
+    let components = service.get_components();
+    // components
+    //     .lock()
+    //     .unwrap()
+    //     .iter()
+    //     .for_each(|(index, hardware)| {
+    //         println!("Component {}: {:?}", index, hardware.get_desc());
+    //     });
 
     // tray.update(|tray: &mut MyTray| {
     //     tray.checked = false;

@@ -2,7 +2,7 @@ pub mod cpu;
 pub mod gpu;
 
 use lib::field::FieldError;
-use lib::proto::Msg;
+use lib::proto::{Msg, MsgCommand};
 use lib::stream::StreamError;
 
 #[derive(Debug)]
@@ -28,8 +28,7 @@ type Result<T> = std::result::Result<T, ComponentError>;
 
 #[allow(unused_variables)]
 pub trait Component {
-    // Refresh the hardware status
-    fn refresh_status(&mut self) -> Result<Msg>;
-
-    fn handle_reply(&mut self, msg: &Msg) -> Result<()>;
+    // Refresh self status from msg reply from daemon
+    fn refresh_from_reply(&mut self, command: &MsgCommand, payload: &Option<Vec<u8>>)
+    -> Result<()>;
 }

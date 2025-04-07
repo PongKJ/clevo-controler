@@ -1,11 +1,11 @@
-use clevo_controlerd::component::cpu::Cpu;
+use clevo_controlerd::component::cpu::intel::IntelCpu;
 use clevo_controlerd::lowlevel::accessor::fd::Fd;
 // use clevo_controlerd::{hardware::cpu::Cpu, service::core::Service};
 use lib::proto::*;
 use lib::stream::StreamListener;
 use std::thread;
 
-use clevo_controlerd::component::gpu::Gpu;
+// use clevo_controlerd::component::gpu::Gpu;
 use clevo_controlerd::service::core::Service;
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
     // gpu.refresh().expect("Failed to refresh GPU");
 
     let mut service = Service::new("clevo-controler.sock").expect("Failed to create service");
-    let cpu = Cpu::init().unwrap();
+    let cpu = IntelCpu::init(0).unwrap();
     std::thread::sleep(std::time::Duration::from_secs(1));
     service
         .add_hardware(0, Box::new(cpu))

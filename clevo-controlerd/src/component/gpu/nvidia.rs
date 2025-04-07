@@ -13,7 +13,7 @@ impl From<nvml_wrapper::error::NvmlError> for GpuError {
 
 type Result<T> = std::result::Result<T, GpuError>;
 
-pub struct Gpu {
+pub struct NvidiaGpu {
     nvml: nvml_wrapper::Nvml,
     pub desc: String,
     pub freq: u64,
@@ -22,11 +22,11 @@ pub struct Gpu {
     pub fan_speed: u64,
 }
 
-impl Gpu {
+impl NvidiaGpu {
     pub fn init() -> Result<Self> {
         let nvml = nvml_wrapper::Nvml::init()?;
         let device = nvml.device_by_index(0)?;
-        let gpu = Gpu {
+        let gpu = NvidiaGpu {
             desc: device.name()?,
             freq: device.clock(
                 nvml_wrapper::enum_wrappers::device::Clock::Graphics,
@@ -60,4 +60,3 @@ impl Gpu {
         Ok(())
     }
 }
-

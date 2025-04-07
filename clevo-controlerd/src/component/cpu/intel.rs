@@ -1,60 +1,25 @@
+use crate::component::cpu::CpuError;
 use crate::{
     component::Component,
     lowlevel::{accessor::fd, middleware},
 };
 use std::collections::HashMap;
 
-#[derive(Debug)]
-pub enum CpuError {
-    SysInfoError,
-    FdError(fd::FdError),
-    FdNotFound,
-    ParseError,
-    TooFrequent,
-    Overflow,
-}
-
-impl From<CpuError> for String {
-    fn from(err: CpuError) -> Self {
-        match err {
-            CpuError::SysInfoError => "SysInfoError".to_string(),
-            CpuError::FdError(err) => format!("FdError: {}", err),
-            CpuError::FdNotFound => "FdNotFound".to_string(),
-            CpuError::ParseError => "ParseError".to_string(),
-            CpuError::TooFrequent => "TooFrequent".to_string(),
-            CpuError::Overflow => "Overflow".to_string(),
-        }
-    }
-}
-
-impl From<fd::FdError> for CpuError {
-    fn from(err: fd::FdError) -> Self {
-        CpuError::FdError(err)
-    }
-}
-
-impl From<std::num::ParseIntError> for CpuError {
-    fn from(_err: std::num::ParseIntError) -> Self {
-        CpuError::ParseError
-    }
-}
-
-type Result<T> = std::result::Result<T, CpuError>;
-
 // TODO: Self impl instead of use sysinfo crates
 #[derive(Debug)]
-pub struct Cpu {
+pub struct IntelCpu {
     sysinfo: sysinfo::System,
     fd_list: HashMap<String, fd::Fd>,
     last_refresh_time_stamp: std::time::Instant,
     energy_comsumption: u64,
 
-    pub desc: String,
-    pub freq: Vec<u32>,
-    pub usage: Vec<u32>,
-    pub period_power: u64,
-    pub temp: u64,
-    pub fan_speed: u64,
+    index: u8, // preserve, not use
+    name: String,
+    freq: Vec<u64>,
+    usage: Vec<f32>,
+    period_power: u64,
+    temp: u64,
+    fan_speed: u64,
 }
 
 /// for example:
@@ -89,26 +54,19 @@ fn add_fd(
     }
 }
 
-impl Cpu {
-    pub fn init() -> Result<Self> {
+impl IntelCpu {
+    pub fn init(index: u8) -> super::Result<Self> {
         let mut sysinfo = sysinfo::System::new();
         sysinfo.refresh_cpu_all();
-        let mut cpu = Cpu {
-            desc: format!(
+        let mut cpu = IntelCpu {
+            index,
+            name: format!(
                 "{}:{}",
                 sysinfo.cpus()[0].vendor_id(),
                 sysinfo.cpus()[0].brand()
             ),
-            freq: sysinfo
-                .cpus()
-                .iter()
-                .map(|cpu| cpu.frequency() as u32)
-                .collect(),
-            usage: sysinfo
-                .cpus()
-                .iter()
-                .map(|cpu| cpu.cpu_usage() as u32)
-                .collect(),
+            freq: sysinfo.cpus().iter().map(|cpu| cpu.frequency()).collect(),
+            usage: sysinfo.cpus().iter().map(|cpu| cpu.cpu_usage()).collect(),
             sysinfo,
             fd_list: HashMap::new(),
             energy_comsumption: 0,
@@ -144,7 +102,7 @@ impl Cpu {
         Ok(cpu)
     }
 
-    pub fn refresh(&mut self) -> Result<()> {
+    pub fn refresh(&mut self) -> super::Result<()> {
         if self.last_refresh_time_stamp.elapsed().as_secs() < 1 {
             return Err(CpuError::TooFrequent);
         }
@@ -177,14 +135,14 @@ impl Cpu {
             .sysinfo
             .cpus()
             .iter()
-            .map(|cpu| cpu.cpu_usage() as u32)
+            .map(|cpu| cpu.cpu_usage())
             .collect();
         // refresh cpu frequency
         self.freq = self
             .sysinfo
             .cpus()
             .iter()
-            .map(|cpu| cpu.frequency() as u32)
+            .map(|cpu| cpu.frequency() )
             .collect();
         // refresh fan speed
         let fan = middleware::fan::Fan::get_instance();
@@ -194,20 +152,30 @@ impl Cpu {
 }
 
 use lib::field::{
-    CpuStatus, fan_speed::FanSpeed, freq::Freq, power::Power, temp::Temp, usage::Usage,
+    CpuStatus,
+    desc::{ComponentType, Desc},
+    fan_speed::FanSpeed,
+    freq::Freq,
+    power::Power,
+    temp::Temp,
+    usage::Usage,
 };
-use lib::proto::{Msg, MsgCommand, MsgError};
-impl Component for Cpu {
-    fn get_desc(&self) -> String {
-        self.desc.clone()
+use lib::proto::{MsgCommand, MsgError};
+impl Component for IntelCpu {
+    fn get_desc(&self) -> Desc {
+        Desc::new(ComponentType::Cpu, self.index, &self.name)
     }
 
     fn refresh_status(&mut self) -> std::result::Result<(), crate::component::ComponentError> {
         self.refresh().map_err(|e| e.into())
     }
-    fn handle_request(&mut self, msg: &Msg) -> std::result::Result<Option<Vec<u8>>, MsgError> {
-        let payload;
-        match msg.packet.command {
+    fn handle_command(
+        &mut self,
+        command: &MsgCommand,
+        payload: &Option<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, MsgError> {
+        let mut payload = None;
+        match command {
             MsgCommand::GetStatus => {
                 let cpu_status = CpuStatus {
                     freq: Freq::new(self.freq.clone()),
@@ -216,7 +184,7 @@ impl Component for Cpu {
                     usage: Usage::new(self.usage.clone()),
                     fan_speed: FanSpeed::new(self.fan_speed),
                 };
-                payload = Some(cpu_status);
+                payload = Some(cpu_status.serialize().unwrap());
             }
             MsgCommand::SetFreq => {
                 todo!()
@@ -225,19 +193,12 @@ impl Component for Cpu {
                 todo!()
             }
             _ => {
-                return Err(MsgError::UnsupportedOperation(format!(
+                MsgError::UnsupportedOperation(format!(
                     "Operation not supported by the hardware:{}",
-                    msg.packet.command
-                )));
+                    command
+                ));
             }
         }
-        if let Some(payload) = payload {
-            Ok(Some(
-                bincode::encode_to_vec(&payload, bincode::config::standard())
-                    .map_err(|e| MsgError::ServerError(e.to_string()))?,
-            ))
-        } else {
-            Ok(None)
-        }
+        Ok(payload)
     }
 }

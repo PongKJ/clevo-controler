@@ -2,8 +2,8 @@ pub mod cpu;
 pub mod gpu;
 
 use cpu::CpuError;
-use lib::field::FieldError;
-use lib::proto::{Msg, MsgError};
+use lib::field::{FieldError, desc::Desc};
+use lib::proto::{Msg, MsgCommand, MsgError, MsgPacket};
 use lib::stream::StreamError;
 
 #[derive(Debug)]
@@ -44,9 +44,7 @@ impl From<bincode::error::DecodeError> for ComponentError {
 
 #[allow(unused_variables)]
 pub trait Component {
-    fn get_desc(&self) -> String {
-        "Unname hardware".to_string()
-    }
+    fn get_desc(&self) -> Desc;
 
     // Refresh the hardware status
     fn refresh_status(&mut self) -> Result<(), ComponentError> {
@@ -54,10 +52,14 @@ pub trait Component {
         Ok(())
     }
 
-    fn handle_request(&mut self, msg: &Msg) -> Result<Option<Vec<u8>>, MsgError> {
+    fn handle_command(
+        &mut self,
+        command: &MsgCommand,
+        payload: &Option<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, MsgError> {
         Err(MsgError::UnsupportedOperation(format!(
             "Operation not supported by the hardware:{}",
-            msg.packet.command
+            command
         )))
     }
 }

@@ -1,10 +1,11 @@
+pub mod desc;
 pub mod fan_speed;
 pub mod freq;
-// pub mod identifier;
 pub mod power;
 pub mod temp;
 pub mod usage;
 use bincode::{Decode, Encode};
+use desc::Desc;
 use std::collections::HashMap;
 use std::fmt::Display;
 
@@ -53,6 +54,17 @@ pub struct CpuStatus {
     pub fan_speed: fan_speed::FanSpeed,
 }
 
+impl CpuStatus {
+    pub fn serialize(&self) -> Result<Vec<u8>, FieldError> {
+        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+    }
+    pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
+        bincode::decode_from_slice(data, bincode::config::standard())
+            .map(|(status, _)| status)
+            .map_err(|e| FieldError::from(e))
+    }
+}
+
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GpuStatus {
     pub freq: freq::Freq,
@@ -60,6 +72,17 @@ pub struct GpuStatus {
     pub temp: temp::Temp,
     pub usage: usage::Usage,
     pub fan_speed: fan_speed::FanSpeed,
+}
+
+impl GpuStatus {
+    pub fn serialize(&self) -> Result<Vec<u8>, FieldError> {
+        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+    }
+    pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
+        bincode::decode_from_slice(data, bincode::config::standard())
+            .map(|(status, _)| status)
+            .map_err(|e| FieldError::from(e))
+    }
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -75,4 +98,4 @@ pub struct SetGpuFreq(pub freq::TargetFreq);
 pub struct SetGpuFanSpeed(pub fan_speed::TargetFanSpeed);
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct ComponentList(pub HashMap<u8, String>);
+pub struct ComponentList(pub HashMap<u8, Desc>);
