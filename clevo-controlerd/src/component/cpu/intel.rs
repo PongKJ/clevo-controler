@@ -142,7 +142,7 @@ impl IntelCpu {
             .sysinfo
             .cpus()
             .iter()
-            .map(|cpu| cpu.frequency() )
+            .map(|cpu| cpu.frequency())
             .collect();
         // refresh fan speed
         let fan = middleware::fan::Fan::get_instance();
@@ -174,7 +174,7 @@ impl Component for IntelCpu {
         command: &MsgCommand,
         payload: &Option<Vec<u8>>,
     ) -> Result<Option<Vec<u8>>, MsgError> {
-        let mut payload = None;
+        let mut reply_payload = None;
         match command {
             MsgCommand::GetStatus => {
                 let cpu_status = CpuStatus {
@@ -184,10 +184,11 @@ impl Component for IntelCpu {
                     usage: Usage::new(self.usage.clone()),
                     fan_speed: FanSpeed::new(self.fan_speed),
                 };
-                payload = Some(cpu_status.serialize().unwrap());
+                reply_payload = Some(cpu_status.serialize().unwrap());
             }
             MsgCommand::SetFreq => {
-                todo!()
+                println!("SetFreq");
+                dbg!(&payload);
             }
             MsgCommand::SetFanSpeed => {
                 todo!()
@@ -199,6 +200,6 @@ impl Component for IntelCpu {
                 ));
             }
         }
-        Ok(payload)
+        Ok(reply_payload)
     }
 }

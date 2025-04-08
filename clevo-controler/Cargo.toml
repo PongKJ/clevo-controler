@@ -3,6 +3,14 @@ name = "clevo-controler"
 version = { workspace = true }
 edition = { workspace = true }
 
+[[bin]]
+name = "clevo-controler"
+path = "src/main.rs"
+
+# [[bin]]
+# name = "clevo-controler-cli"
+# path = "src/cli.rs"
+
 [dependencies]
 lib = { path = "../lib" }
 slint = { version = "1.10.0" }

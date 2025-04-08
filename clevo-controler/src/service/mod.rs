@@ -1,6 +1,6 @@
-use lib::proto::ProtoError;
-
 pub mod core;
+
+use lib::proto::ProtoError;
 
 pub enum ServiceError {
     SocketError(String),

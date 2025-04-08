@@ -6,7 +6,7 @@ use lib::proto::*;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
-use crate::domain::component::{Component, ComponentError};
+use crate::component::{Component, ComponentError};
 
 #[derive(Debug)]
 pub struct Cpu {
@@ -71,10 +71,19 @@ impl Component for Cpu {
                     self.power = cpu_status.power;
                     self.fan_speed = cpu_status.fan_speed;
                 }
+                let msg_packet =
+                    MsgPacket::new(MsgMode::Request, None, 0, self.id_num, MsgCommand::SetFreq)
+                        .serialize()
+                        .expect("Failed to serialize MsgPacket");
+                let sender = self.sender.lock().unwrap();
+                sender.send(MsgBody::new(msg_packet, Some(vec![1,2,2]))).unwrap();
             }
             _ => {}
         }
-        dbg!(self);
         Ok(())
+    }
+
+    fn accept(&mut self, visitor: &mut dyn super::Visitor) {
+        visitor.visit_cpu(self);
     }
 }

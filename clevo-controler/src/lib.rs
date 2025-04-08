@@ -1,4 +1,4 @@
 pub mod controler;
-pub mod domain;
+pub mod component;
 pub mod ui;
 pub mod service;
