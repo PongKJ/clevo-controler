@@ -1,7 +1,9 @@
 pub mod cpu;
+pub mod fan;
 pub mod gpu;
 
 use cpu::Cpu;
+use fan::Fan;
 use lib::field::FieldError;
 use lib::proto::{Msg, MsgCommand};
 use lib::stream::StreamError;
@@ -30,8 +32,8 @@ type Result<T> = std::result::Result<T, ComponentError>;
 #[allow(unused_variables)]
 pub trait Component {
     // Refresh self status from msg reply from daemon
-    fn refresh_from_reply(&mut self, command: &MsgCommand, payload: &Option<Vec<u8>>)
-    -> Result<()>;
+    fn refresh_status(&mut self) -> Result<()>;
+    fn update_from_reply(&mut self, command: &MsgCommand, payload: &Vec<Vec<u8>>) -> Result<()>;
 
     fn accept(&mut self, visitor: &mut dyn Visitor);
 }
@@ -40,5 +42,6 @@ pub trait Component {
 // 访问者模式的目的是将数据结构与操作分离
 pub trait Visitor {
     fn visit_cpu(&mut self, cpu: &Cpu);
+    fn visit_fan(&mut self, fan: &Fan);
     // fn visit_gpu(&mut self, gpu: &Gpu);
 }

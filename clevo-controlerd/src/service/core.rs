@@ -1,4 +1,5 @@
 use crate::component::{Component, ComponentError};
+use crate::lowlevel::accessor::ec::EcAccessor;
 use lib::field::ComponentList;
 use lib::proto::*;
 use lib::stream::{SocketStream, StreamListener};
@@ -68,10 +69,10 @@ impl Service {
             stream: &mut SocketStream,
             body: MsgBody,
         ) -> Result<()> {
-            let mut packet = MsgPacket::deserialize(body.get_packet())?;
+            let mut packet = body.get_packet().clone();
             packet.set_mode(MsgMode::Reply);
-            let mut payload = None;
-            dbg!(&packet.get_command());
+            let mut payload = vec![];
+            // dbg!(&packet.get_command());
             match packet.get_command() {
                 MsgCommand::GetComponentList => {
                     let mut hardware_list = ComponentList(HashMap::new());
@@ -79,7 +80,7 @@ impl Service {
                         hardware_list.0.insert(*id, hardware.get_desc());
                     });
                     dbg!(&hardware_list);
-                    payload = Some(bincode::encode_to_vec(
+                    payload.push(bincode::encode_to_vec(
                         &hardware_list,
                         bincode::config::standard(),
                     )?);
@@ -98,7 +99,7 @@ impl Service {
                     }
                 }
             }
-            send_msg(stream, &MsgBody::new(packet.serialize().unwrap(), payload))
+            send_msg(stream, &MsgBody::new(packet, payload))
                 .expect("Failed to send hardware list reply");
             Ok(())
         }

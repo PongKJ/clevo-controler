@@ -1,8 +1,5 @@
 use crate::component::cpu::CpuError;
-use crate::{
-    component::Component,
-    lowlevel::{accessor::fd, middleware},
-};
+use crate::{component::Component, lowlevel::accessor::fd};
 use std::collections::HashMap;
 
 // TODO: Self impl instead of use sysinfo crates
@@ -19,7 +16,6 @@ pub struct IntelCpu {
     usage: Vec<f32>,
     period_power: u64,
     temp: u64,
-    fan_speed: u64,
 }
 
 /// for example:
@@ -73,7 +69,6 @@ impl IntelCpu {
             last_refresh_time_stamp: std::time::Instant::now(),
             period_power: 0,
             temp: 0,
-            fan_speed: 0,
         };
         add_fd(
             &mut cpu.fd_list,
@@ -144,26 +139,19 @@ impl IntelCpu {
             .iter()
             .map(|cpu| cpu.frequency())
             .collect();
-        // refresh fan speed
-        let fan = middleware::fan::Fan::get_instance();
-        self.fan_speed = fan.get_fan_rpm(middleware::fan::FanIndex::CPU) as u64;
         Ok(())
     }
 }
 
+use lib::field::category::Category;
+use lib::field::fan_speed::TargetFanSpeed;
 use lib::field::{
-    CpuStatus,
-    desc::{ComponentType, Desc},
-    fan_speed::FanSpeed,
-    freq::Freq,
-    power::Power,
-    temp::Temp,
-    usage::Usage,
+    CpuStatus, desc::Desc, fan_speed::FanSpeed, freq::Freq, power::Power, temp::Temp, usage::Usage,
 };
 use lib::proto::{MsgCommand, MsgError};
 impl Component for IntelCpu {
     fn get_desc(&self) -> Desc {
-        Desc::new(ComponentType::Cpu, self.index, &self.name)
+        Desc::new(Category::Cpu, self.index, &self.name)
     }
 
     fn refresh_status(&mut self) -> std::result::Result<(), crate::component::ComponentError> {
@@ -172,9 +160,9 @@ impl Component for IntelCpu {
     fn handle_command(
         &mut self,
         command: &MsgCommand,
-        payload: &Option<Vec<u8>>,
-    ) -> Result<Option<Vec<u8>>, MsgError> {
-        let mut reply_payload = None;
+        payload: &Vec<Vec<u8>>,
+    ) -> Result<Vec<Vec<u8>>, MsgError> {
+        let mut reply_payload = vec![];
         match command {
             MsgCommand::GetStatus => {
                 let cpu_status = CpuStatus {
@@ -182,16 +170,11 @@ impl Component for IntelCpu {
                     power: Power::new(self.period_power),
                     temp: Temp::new(self.temp),
                     usage: Usage::new(self.usage.clone()),
-                    fan_speed: FanSpeed::new(self.fan_speed),
                 };
-                reply_payload = Some(cpu_status.serialize().unwrap());
+                reply_payload.push(cpu_status.serialize().unwrap());
             }
             MsgCommand::SetFreq => {
                 println!("SetFreq");
-                dbg!(&payload);
-            }
-            MsgCommand::SetFanSpeed => {
-                todo!()
             }
             _ => {
                 MsgError::UnsupportedOperation(format!(

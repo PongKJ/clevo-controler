@@ -1,4 +1,4 @@
-use std::{default, fmt::Display};
+use std::fmt::Display;
 
 use crate::{
     field::FieldError,
@@ -61,9 +61,11 @@ pub enum MsgError {
 pub enum MsgCommand {
     GetComponentList, // get current enabled hardwares' index
     GetStatus,
+    GetFanSpeed,
 
     SetFreq,
     SetFanSpeed,
+    SetFanAuto,
 }
 
 impl Display for MsgCommand {
@@ -73,6 +75,8 @@ impl Display for MsgCommand {
             MsgCommand::GetStatus => write!(f, "GetCpuStatus"),
             MsgCommand::SetFreq => write!(f, "SetCpuFreq"),
             MsgCommand::SetFanSpeed => write!(f, "SetCpuFanSpeed"),
+            MsgCommand::GetFanSpeed => write!(f, "GetCpuFanSpeed"),
+            MsgCommand::SetFanAuto => write!(f, "SetCpuAuto"),
         }
     }
 }
@@ -82,7 +86,6 @@ pub struct MsgHeader {
     version: u8,
     timestamp: u64,
     packet_length: u32,
-    payload_length: u32,
 }
 
 // NOTE: std::mem::size_of considers the allignment padding, can't use it
@@ -91,10 +94,9 @@ impl MsgHeader {
         std::mem::size_of::<u8>()    // Size of `version`
         + std::mem::size_of::<u64>() // Size of `timestamp`
         + std::mem::size_of::<u32>() // Size of `length`
-        + std::mem::size_of::<u32>() // Size of `some_other_field`
     }
 
-    pub fn new(version: u8, packet_length: usize, payload_length: usize) -> Self {
+    pub fn new(version: u8, packet_length: usize) -> Self {
         Self {
             version,
             timestamp: std::time::SystemTime::now()
@@ -102,7 +104,6 @@ impl MsgHeader {
                 .unwrap()
                 .as_secs(),
             packet_length: packet_length as u32,
-            payload_length: payload_length as u32,
         }
     }
     pub fn get_version(&self) -> u8 {
@@ -114,9 +115,6 @@ impl MsgHeader {
     pub fn get_packet_length(&self) -> u32 {
         self.packet_length
     }
-    pub fn get_payload_length(&self) -> u32 {
-        self.payload_length
-    }
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -126,6 +124,7 @@ pub struct MsgPacket {
     sequence: u64, // Unique sequence number for the message
     id_num: u8,
     command: MsgCommand,
+    payload_length: Vec<u32>, // Maybe multiple payloads
 }
 
 impl MsgPacket {
@@ -142,6 +141,7 @@ impl MsgPacket {
             sequence,
             id_num,
             command,
+            payload_length: vec![], // Placeholder, will be set later
         }
     }
     pub fn get_mode(&self) -> &MsgMode {
@@ -158,6 +158,9 @@ impl MsgPacket {
     }
     pub fn get_id_num(&self) -> u8 {
         self.id_num
+    }
+    pub fn get_payload_length(&self) -> &Vec<u32> {
+        &self.payload_length
     }
     pub fn set_id_num(&mut self, id_num: u8) {
         self.id_num = id_num;
@@ -180,17 +183,20 @@ impl MsgPacket {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct MsgBody {
-    packet: Vec<u8>,
-    payload: Option<Vec<u8>>,
+    packet: MsgPacket,
+    payload: Vec<Vec<u8>>,
 }
 impl MsgBody {
-    pub fn new(packet: Vec<u8>, payload: Option<Vec<u8>>) -> Self {
+    pub fn new(packet: MsgPacket, payload: Vec<Vec<u8>>) -> Self {
+        let mut packet = packet;
+        // Set the payload length
+        packet.payload_length = payload.iter().map(|p| p.len() as u32).collect();
         Self { packet, payload }
     }
-    pub fn get_packet(&self) -> &Vec<u8> {
+    pub fn get_packet(&self) -> &MsgPacket {
         &self.packet
     }
-    pub fn get_payload(&self) -> &Option<Vec<u8>> {
+    pub fn get_payload(&self) -> &Vec<Vec<u8>> {
         &self.payload
     }
 }
@@ -210,11 +216,17 @@ pub fn recv_msg(stream: &mut SocketStream) -> Result<MsgBody> {
         msg_header_bin.as_slice(),
         bincode::config::standard().with_fixed_int_encoding(),
     )?;
-    let msg_packet = stream.read(msg_header.packet_length as usize)?;
-    let payload = if msg_header.payload_length > 0 {
-        Some(stream.read(msg_header.payload_length as usize)?)
+    let msg_packet =
+        MsgPacket::deserialize(stream.read(msg_header.packet_length as usize)?.as_slice())?;
+    let payload = if !msg_packet.payload_length.is_empty() {
+        let mut payload = Vec::new();
+        for length in &msg_packet.payload_length {
+            let payload_bin = stream.read(*length as usize)?;
+            payload.push(payload_bin);
+        }
+        payload
     } else {
-        None
+        vec![]
     };
     Ok(MsgBody {
         packet: msg_packet,
@@ -223,20 +235,18 @@ pub fn recv_msg(stream: &mut SocketStream) -> Result<MsgBody> {
 }
 
 pub fn send_msg(stream: &mut SocketStream, body: &MsgBody) -> Result<()> {
-    let payload_length = if let Some(p) = &body.payload {
-        p.len()
-    } else {
-        0
-    };
-    let msg_header = MsgHeader::new(1, body.packet.len(), payload_length);
+    let msg_packet_bin = body.packet.serialize()?;
+    let msg_header = MsgHeader::new(1, msg_packet_bin.len());
     let msg_header_bin = bincode::encode_to_vec(
         &msg_header,
         bincode::config::standard().with_fixed_int_encoding(),
     )?;
     stream.write(&msg_header_bin)?;
-    stream.write(body.packet.as_slice())?;
-    if let Some(payload) = &body.payload {
-        stream.write(payload)?;
+    stream.write(msg_packet_bin.as_slice())?;
+    if !body.packet.payload_length.is_empty() {
+        for payload in &body.payload {
+            stream.write(payload)?;
+        }
     }
     Ok(())
 }

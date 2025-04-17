@@ -1,5 +1,6 @@
 pub mod cpu;
-pub mod gpu;
+pub mod fan;
+// pub mod gpu;
 
 use cpu::CpuError;
 use lib::field::{FieldError, desc::Desc};
@@ -55,8 +56,8 @@ pub trait Component {
     fn handle_command(
         &mut self,
         command: &MsgCommand,
-        payload: &Option<Vec<u8>>,
-    ) -> Result<Option<Vec<u8>>, MsgError> {
+        payload: &Vec<Vec<u8>>,
+    ) -> Result<Vec<Vec<u8>>, MsgError> {
         Err(MsgError::UnsupportedOperation(format!(
             "Operation not supported by the hardware:{}",
             command

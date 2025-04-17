@@ -1,8 +1,10 @@
 use crate::component::Component;
 use crate::component::Visitor;
 use crate::component::cpu::Cpu;
+use crate::component::fan::Fan;
 use lib::field::ComponentList;
-use lib::field::desc::{ComponentType, Desc};
+use lib::field::category::Category;
+use lib::field::desc::Desc;
 use lib::proto::MsgBody;
 use lib::proto::MsgCommand;
 use lib::proto::MsgMode;
@@ -132,13 +134,17 @@ impl Service {
         let mut components_info = self.components_info.lock().unwrap();
         component_list.0.iter().for_each(|(id_num, desc)| {
             components_info.insert(*id_num, ComponentInfo::new(desc.clone()));
-            match desc.get_type() {
-                ComponentType::Cpu => {
+            match desc.get_category() {
+                Category::Cpu => {
                     let cpu = Cpu::new(*id_num, Arc::clone(&self.sender));
                     components.insert(*id_num, Box::new(cpu));
                 }
-                ComponentType::Gpu => {
+                Category::Gpu => {
                     todo!()
+                }
+                Category::Fan => {
+                    let fan = Fan::new(*id_num, Arc::clone(&self.sender));
+                    components.insert(*id_num, Box::new(fan));
                 }
             }
         });
@@ -147,19 +153,14 @@ impl Service {
     // Get harware list --> create hardware object --> add to components --> msg loop
     fn spawn_communicator(&mut self, receiver: Receiver<MsgBody>) -> Result<JoinHandle<()>> {
         // get component list first
-        let packet = MsgPacket::new(MsgMode::Reply, None, 0, 0, MsgCommand::GetComponentList)
-            .serialize()
-            .expect("Failed to serialize MsgPacket");
-        let body = MsgBody::new(packet.clone(), None);
+        let packet = MsgPacket::new(MsgMode::Reply, None, 0, 0, MsgCommand::GetComponentList);
+        let body = MsgBody::new(packet, vec![]);
         let mut socket_stream = SocketStream::new(self.config.socket_name.as_str())
             .expect("Failed to create socket stream");
         send_msg(&mut socket_stream, &body).expect("Failed to send message");
         let reply_msg = recv_msg(&mut socket_stream).unwrap();
-        let (component_list, _): (ComponentList, _) = bincode::decode_from_slice(
-            reply_msg.get_payload().as_deref().unwrap_or(&[]),
-            bincode::config::standard(),
-        )
-        .expect("Failed to decode hardware list");
+        let component_list =
+            ComponentList::deserialize(reply_msg.get_payload()[0].as_slice()).unwrap();
         dbg!(&component_list);
         self.add_component(&component_list);
 
@@ -177,12 +178,12 @@ impl Service {
                     }
                 }
                 let body = recv_msg(&mut socket_stream).expect("Failed to receive message");
-                let packet = MsgPacket::deserialize(body.get_packet()).unwrap();
+                let packet = body.get_packet();
                 println!("Received command: {:?}", packet.get_command());
                 let mut components = components_clone.lock().unwrap();
                 if let Some(component) = components.get_mut(&packet.get_id_num()) {
                     component
-                        .refresh_from_reply(packet.get_command(), body.get_payload())
+                        .update_from_reply(packet.get_command(), body.get_payload())
                         .unwrap();
                 } else {
                     eprintln!("Component not found for index: {}", packet.get_id_num());
@@ -194,27 +195,16 @@ impl Service {
 
     fn spawn_refresher(&mut self) -> Result<JoinHandle<()>> {
         // refresh component status
-        let components_info_clone = Arc::clone(&self.components_info);
-        let sender_clone = Arc::clone(&self.sender);
+        let components_clone = Arc::clone(&self.components);
         let interval = self.config.interval;
 
         let handle = std::thread::spawn(move || {
             loop {
-                let components_info = components_info_clone.lock().unwrap();
-                components_info
-                    .iter()
-                    .filter(|(_, info)| info.is_active())
-                    .for_each(|(index, _)| {
-                        let packet =
-                            MsgPacket::new(MsgMode::Reply, None, 0, *index, MsgCommand::GetStatus)
-                                .serialize()
-                                .expect("Failed to serialize MsgPacket");
-                        let body = MsgBody::new(packet.clone(), None);
-                        let sender = sender_clone.lock().unwrap();
-                        // hardware.refresh_status().unwrap();
-                        sender.send(body).unwrap();
-                    });
-                drop(components_info);
+                let mut components = components_clone.lock().unwrap();
+                components.iter_mut().for_each(|(_, c)| {
+                    c.refresh_status().unwrap();
+                });
+                drop(components);
                 std::thread::sleep(std::time::Duration::from_secs(interval));
             }
         });

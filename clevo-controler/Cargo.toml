@@ -12,16 +12,18 @@ path = "src/main.rs"
 # path = "src/cli.rs"
 
 [dependencies]
-lib = { path = "../lib" }
-slint = { version = "1.10.0" }
-ksni = { version = "0.3.1" }
-tokio = { version = "1.44.1" }
 interprocess = { workspace = true }
 bincode = { workspace = true }
 thiserror = { workspace = true }
 derive_more = { workspace = true }
 dotenv = { workspace = true }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = { version = "1.0" }
 uuid = { version = "1.16.0", features = ["v4"] }
+lib = { path = "../lib" }
+ksni = { version = "0.3.1" }
+tokio = { version = "1.44.1" }
+iced = { version = "0.13.1", features = ["image"] }
+iced_aw = { version = "0.12.2" }
 
 [build-dependencies]
-slint-build = { version = "1.10.0" }

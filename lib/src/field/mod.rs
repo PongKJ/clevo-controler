@@ -1,3 +1,4 @@
+pub mod category;
 pub mod desc;
 pub mod fan_speed;
 pub mod freq;
@@ -51,7 +52,6 @@ pub struct CpuStatus {
     pub usage: usage::Usage,
     pub power: power::Power,
     pub temp: temp::Temp,
-    pub fan_speed: fan_speed::FanSpeed,
 }
 
 impl CpuStatus {
@@ -99,3 +99,10 @@ pub struct SetGpuFanSpeed(pub fan_speed::TargetFanSpeed);
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct ComponentList(pub HashMap<u8, Desc>);
+impl ComponentList {
+    pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
+        bincode::decode_from_slice(data, bincode::config::standard())
+            .map(|(list, _)| list)
+            .map_err(|e| FieldError::from(e))
+    }
+}

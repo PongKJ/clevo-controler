@@ -1,21 +1,22 @@
+use core::num;
 use std::thread;
 
-use clevo_controler::controler::Controler;
-use clevo_controler::{service::core::Service, ui::tray::MyTray};
+use clevo_controler::service::core::Service;
+use clevo_controler::temp_controler::Controler;
 use ksni::Handle;
 use std::sync::{Arc, Mutex};
 
-async fn show_tray_status(tray: &Handle<MyTray>) {
-    // Simulate some work
-    loop {
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        tray.update(|tray: &mut MyTray| {
-            dbg!(tray);
-        })
-        .await
-        .unwrap();
-    }
-}
+// async fn show_tray_status(tray: &Handle<MyTray>) {
+//     // Simulate some work
+//     loop {
+//         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+//         tray.update(|tray: &mut MyTray| {
+//             dbg!(tray);
+//         })
+//         .await
+//         .unwrap();
+//     }
+// }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -26,7 +27,7 @@ async fn main() {
     let service = Arc::new(Mutex::new(service));
     let service_clone = service.clone();
     thread::spawn(move || {
-        let mut contorler = Controler::new(90.0);
+        let mut contorler = Controler::new("config.json");
         loop {
             let mut service = service_clone.lock().unwrap();
             service.accept(0, &mut contorler);

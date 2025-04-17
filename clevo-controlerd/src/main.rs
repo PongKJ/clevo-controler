@@ -6,17 +6,19 @@ use lib::stream::StreamListener;
 use std::thread;
 
 // use clevo_controlerd::component::gpu::Gpu;
+use clevo_controlerd::component::fan::Fan;
 use clevo_controlerd::service::core::Service;
 
 fn main() {
-    // let mut gpu = Gpu::init().expect("Failed to initialize GPU");
-    // gpu.refresh().expect("Failed to refresh GPU");
-
     let mut service = Service::new("clevo-controler.sock").expect("Failed to create service");
     let cpu = IntelCpu::init(0).unwrap();
+    let fan = Fan::new();
     std::thread::sleep(std::time::Duration::from_secs(1));
     service
         .add_hardware(0, Box::new(cpu))
+        .expect("Failed to add hardware");
+    service
+        .add_hardware(1, Box::new(fan))
         .expect("Failed to add hardware");
     let monitor_handle = service.spawn_monitor().expect("Failed to spawn service");
     let msg_handler_handle = service

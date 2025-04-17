@@ -1,5 +1,6 @@
 use std::{thread, time::Duration};
 use x86::io;
+
 #[derive(Debug)]
 pub struct EcAccessor {}
 
@@ -82,5 +83,6 @@ impl EcAccessor {
         self.outb(EC_DATA_REG, addr);
         self.poll_ready(EC_SC_REG, EC_SC_IBF_INDEX, false);
         self.outb(EC_DATA_REG, byte);
+        self.poll_ready(EC_SC_REG, EC_SC_IBF_INDEX, false);
     }
 }
