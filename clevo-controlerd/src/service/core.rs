@@ -1,5 +1,4 @@
 use crate::component::{Component, ComponentError};
-use crate::lowlevel::accessor::ec::EcAccessor;
 use lib::field::ComponentList;
 use lib::proto::*;
 use lib::stream::{SocketStream, StreamListener};

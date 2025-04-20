@@ -44,8 +44,7 @@ impl Fan {
             self.id_num,
             MsgCommand::SetFanSpeed,
         );
-        let mut payload = vec![];
-        payload.push(index.serialize().unwrap());
+        let mut payload = vec![index.serialize().unwrap()];
         payload.push(
             target_fan_speed
                 .serialize()
@@ -101,7 +100,6 @@ impl Component for Fan {
                 }
             }
         }
-        dbg!(&self.cpu_fan_speed);
         Ok(())
     }
 

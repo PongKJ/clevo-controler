@@ -60,6 +60,7 @@ impl Default for ControlerCfg {
                 kp: 1.0,
                 ki: 0.5,
                 kd: 0.5,
+                smoothing_factor: 0.3,
             },
 
             gpu_method: Method::Pid,
@@ -68,6 +69,7 @@ impl Default for ControlerCfg {
                 kp: 1.0,
                 ki: 0.5,
                 kd: 0.5,
+                smoothing_factor: 0.3,
             },
         }
     }
@@ -129,13 +131,11 @@ impl Drop for Controler {
 impl Visitor for Controler {
     fn visit_cpu(&mut self, cpu: &crate::component::cpu::Cpu) {
         // 访问 CPU 组件
-        println!("Visiting CPU: {:#?}", cpu);
         // 在这里可以执行一些操作，例如获取 CPU 的频率、温度等信息
-        // self.expect_temp = cpu.get_temp();
+        self.cpu_current_temp = cpu.get_temp().clone();
     }
     fn visit_fan(&mut self, fan: &crate::component::fan::Fan) {
         let cpu_target_fan_speed = self.cpu_algo.update(&self.cpu_current_temp);
-        dbg!(&cpu_target_fan_speed);
         fan.set_fan_speed(FanIndex::Cpu, TargetFanSpeed::new(cpu_target_fan_speed));
     }
 }

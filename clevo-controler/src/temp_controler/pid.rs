@@ -1,5 +1,5 @@
 // use pid to control fan speed
-use lib::field::{fan_speed::TargetFanSpeed, temp::Temp};
+use lib::field::temp::Temp;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -8,6 +8,8 @@ pub struct PidCfg {
     pub kp: f32,
     pub ki: f32,
     pub kd: f32,
+
+    pub smoothing_factor: f32,
 }
 
 pub struct PidControler {
@@ -16,6 +18,7 @@ pub struct PidControler {
     integral: f32,
 
     last_update_time: std::time::SystemTime,
+    prev_speed: Option<f32>,
 }
 
 impl PidControler {
@@ -24,7 +27,8 @@ impl PidControler {
             cfg,
             prev_error: 0.0,
             integral: 0.0,
-            last_update_time: std::time::SystemTime::now(),
+            last_update_time: std::time::SystemTime::now() - std::time::Duration::from_secs(2),
+            prev_speed: None,
         }
     }
 }
@@ -35,11 +39,31 @@ impl ControlerAlgo for PidControler {
         let current_temp = current_temp.get_value() as f32;
         let delta_time = self.last_update_time.elapsed().unwrap().as_secs_f32();
         self.last_update_time = std::time::SystemTime::now();
-        let error = current_temp - self.cfg.target_temp;
+        let error = (current_temp - self.cfg.target_temp).clamp(0.0, 8000.0);
         self.integral += error * delta_time;
+        self.integral = self.integral.clamp(0.0, 2000.0);
         let derivative = (error - self.prev_error) / delta_time;
         self.prev_error = error;
-        ((self.cfg.kp * error + self.cfg.ki * self.integral + self.cfg.kd * derivative) / 1000.0)
-            as u32
+        let raw_output =
+            self.cfg.kp * error + self.cfg.ki * self.integral + self.cfg.kd * derivative;
+
+        println!(
+            "current_temp: {}, target_temp: {}, error: {}, raw_output: {}",
+            current_temp, self.cfg.target_temp, error, raw_output
+        );
+        println!("integral: {}", self.integral);
+        // println!(
+        //     "raw_speed: {}, smoothed_speed: {}",
+        //     raw_speed, smoothed_speed
+        // );
+        // let clamped_speed = smoothed_speed.clamp(0.0, 100.0); // Clamp output between 0.0 and 1.0
+        let raw_speed = (raw_output / 100.0).clamp(0.0, 100.0);
+        let smoothed_speed = if let Some(prev_speed) = self.prev_speed {
+            prev_speed + (raw_speed - prev_speed) * self.cfg.smoothing_factor
+        } else {
+            raw_speed
+        };
+        self.prev_speed = Some(smoothed_speed);
+        smoothed_speed as u32
     }
 }

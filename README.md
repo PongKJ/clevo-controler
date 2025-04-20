@@ -1,4 +1,4 @@
-# About clevo-controler
+# About clevo-controller
 
-a fan controler for clevo, inspired by https://github.com/elight2/ClevoFanControl.git </br>
-implied by rust, just for fun
+[WIP]
+controller center for clevo, inspired by https://github.com/elight2/ClevoFanControl.git

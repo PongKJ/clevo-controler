@@ -77,7 +77,7 @@ impl Service {
         let mut service = Self {
             sender: Arc::new(Mutex::new(sender)),
             config: ServiceConfig {
-                interval: 5, // Default refresh interval is 5 seconds
+                interval: 1,
                 socket_name: socket_name.to_string(),
             },
             components_info: Arc::new(Mutex::new(HashMap::new())),
@@ -179,7 +179,6 @@ impl Service {
                 }
                 let body = recv_msg(&mut socket_stream).expect("Failed to receive message");
                 let packet = body.get_packet();
-                println!("Received command: {:?}", packet.get_command());
                 let mut components = components_clone.lock().unwrap();
                 if let Some(component) = components.get_mut(&packet.get_id_num()) {
                     component

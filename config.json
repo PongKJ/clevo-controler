@@ -1,1 +1,1 @@
-{"cpu_method":"Pid","gpu_method":"Pid","cpu_pid_cfg":{"target_temp":60000.0,"kp":1.0,"ki":0.5,"kd":0.5},"gpu_pid_cfg":{"target_temp":60000.0,"kp":1.0,"ki":0.5,"kd":0.5}}
+{"cpu_method":"Pid","gpu_method":"Pid","cpu_pid_cfg":{"target_temp":60000.0,"kp":1.0,"ki":0.5,"kd":0.5,"smoothing_factor":0.3},"gpu_pid_cfg":{"target_temp":60000.0,"kp":1.0,"ki":0.5,"kd":0.5,"smoothing_factor":0.3}}

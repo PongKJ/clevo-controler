@@ -105,18 +105,18 @@ impl Component for Fan {
                 },
                 lib::proto::MsgCommand::SetFanSpeed => match fan_index {
                     FanIndex::Cpu => {
-                        let target_fan_speed = TargetFanSpeed::deserialize(&payload[0]).unwrap();
+                        let target_fan_speed = TargetFanSpeed::deserialize(&payload[1]).unwrap();
                         self.set_fan_speed(Category::Cpu, target_fan_speed.get_duty() as u64);
                     }
                     FanIndex::Gpu => {
-                        let target_fan_speed = TargetFanSpeed::deserialize(&payload[0]).unwrap();
+                        let target_fan_speed = TargetFanSpeed::deserialize(&payload[1]).unwrap();
                         self.set_fan_speed(Category::Gpu, target_fan_speed.get_duty() as u64);
                     }
                     FanIndex::All => {
                         let cpu_target_fan_speed =
-                            TargetFanSpeed::deserialize(&payload[0]).unwrap();
-                        let gpu_target_fan_speed =
                             TargetFanSpeed::deserialize(&payload[1]).unwrap();
+                        let gpu_target_fan_speed =
+                            TargetFanSpeed::deserialize(&payload[2]).unwrap();
                         self.set_fan_speed(Category::Cpu, cpu_target_fan_speed.get_duty() as u64);
                         self.set_fan_speed(Category::Gpu, gpu_target_fan_speed.get_duty() as u64);
                     }
