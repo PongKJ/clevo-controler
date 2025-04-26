@@ -1,4 +1,4 @@
-use super::category::{self, Category};
+use super::category::Category;
 use bincode::{Decode, Encode};
 
 #[derive(Debug, Clone, Encode, Decode)]

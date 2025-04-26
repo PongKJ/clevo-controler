@@ -1,14 +1,9 @@
+use crate::component::Component;
 use lib::field::fan_speed::FanIndex;
-use lib::field::freq::TargetFreq;
-use lib::field::{
-    CpuStatus, fan_speed::FanSpeed, fan_speed::TargetFanSpeed, freq::Freq, power::Power,
-    temp::Temp, usage::Usage,
-};
+use lib::field::{fan_speed::FanSpeed, fan_speed::TargetFanSpeed};
 use lib::proto::*;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-
-use crate::component::{Component, ComponentError};
 
 pub struct Fan {
     id_num: u8,
@@ -78,25 +73,20 @@ impl Component for Fan {
     fn update_from_reply(
         &mut self,
         command: &MsgCommand,
-        payload: &Vec<Vec<u8>>,
+        payload: &[Vec<u8>],
     ) -> super::Result<()> {
         if *command == MsgCommand::GetFanSpeed {
-            let fan_index: FanIndex =
-                FanIndex::deserialize(&payload[0]).map_err(|e| ComponentError::BadReply)?;
+            let fan_index: FanIndex = FanIndex::deserialize(&payload[0])?;
             match fan_index {
                 FanIndex::Cpu => {
-                    self.cpu_fan_speed =
-                        FanSpeed::deserialize(&payload[1]).map_err(|e| ComponentError::BadReply)?;
+                    self.cpu_fan_speed = FanSpeed::deserialize(&payload[1])?;
                 }
                 FanIndex::Gpu => {
-                    self.gpu_fan_speed =
-                        FanSpeed::deserialize(&payload[1]).map_err(|e| ComponentError::BadReply)?;
+                    self.gpu_fan_speed = FanSpeed::deserialize(&payload[1])?;
                 }
                 FanIndex::All => {
-                    self.cpu_fan_speed =
-                        FanSpeed::deserialize(&payload[1]).map_err(|e| ComponentError::BadReply)?;
-                    self.gpu_fan_speed =
-                        FanSpeed::deserialize(&payload[2]).map_err(|e| ComponentError::BadReply)?;
+                    self.cpu_fan_speed = FanSpeed::deserialize(&payload[1])?;
+                    self.gpu_fan_speed = FanSpeed::deserialize(&payload[2])?;
                 }
             }
         }

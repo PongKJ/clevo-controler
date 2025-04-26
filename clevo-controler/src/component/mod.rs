@@ -5,7 +5,7 @@ pub mod gpu;
 use cpu::Cpu;
 use fan::Fan;
 use lib::field::FieldError;
-use lib::proto::{Msg, MsgCommand};
+use lib::proto::MsgCommand;
 use lib::stream::StreamError;
 
 #[derive(Debug)]
@@ -33,8 +33,7 @@ type Result<T> = std::result::Result<T, ComponentError>;
 pub trait Component {
     // Refresh self status from msg reply from daemon
     fn refresh_status(&mut self) -> Result<()>;
-    fn update_from_reply(&mut self, command: &MsgCommand, payload: &Vec<Vec<u8>>) -> Result<()>;
-
+    fn update_from_reply(&mut self, command: &MsgCommand, payload: &[Vec<u8>]) -> Result<()>;
     fn accept(&mut self, visitor: &mut dyn Visitor);
 }
 

@@ -1,8 +1,5 @@
 use lib::field::freq::TargetFreq;
-use lib::field::{
-    CpuStatus, fan_speed::FanSpeed, fan_speed::TargetFanSpeed, freq::Freq, power::Power,
-    temp::Temp, usage::Usage,
-};
+use lib::field::{CpuStatus, freq::Freq, power::Power, temp::Temp, usage::Usage};
 use lib::proto::*;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -68,7 +65,7 @@ impl Cpu {
 type Result<T> = std::result::Result<T, ComponentError>;
 
 impl Component for Cpu {
-    fn refresh_status(&mut self) -> super::Result<()> {
+    fn refresh_status(&mut self) -> Result<()> {
         let msg_packet = MsgPacket::new(
             MsgMode::Request,
             None,
@@ -86,13 +83,12 @@ impl Component for Cpu {
     fn update_from_reply(
         &mut self,
         command: &MsgCommand,
-        payload: &Vec<Vec<u8>>,
+        payload: &[Vec<u8>],
     ) -> super::Result<()> {
         match command {
             MsgCommand::GetStatus => {
                 assert_eq!(payload.len(), 1);
-                let cpu_status: CpuStatus =
-                    CpuStatus::deserialize(&payload[0]).map_err(|e| ComponentError::BadReply)?;
+                let cpu_status: CpuStatus = CpuStatus::deserialize(&payload[0])?;
                 self.freq = cpu_status.freq;
                 self.usage = cpu_status.usage;
                 self.temp = cpu_status.temp;

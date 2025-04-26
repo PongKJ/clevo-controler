@@ -46,12 +46,10 @@ impl TargetFreq {
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+        Ok(bincode::encode_to_vec(self, bincode::config::standard())?)
     }
 
     pub fn deserialize(data: &[u8]) -> Result<Self> {
-        bincode::decode_from_slice(data, bincode::config::standard())
-            .map(|(msg, _)| msg)
-            .map_err(|e| FieldError::from(e))
+        Ok(bincode::decode_from_slice(data, bincode::config::standard())?.0)
     }
 }

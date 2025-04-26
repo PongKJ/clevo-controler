@@ -111,8 +111,11 @@ impl IntelCpu {
                 return Err(CpuError::FdNotFound);
             }
         };
-        self.period_power = (current_energy_comsumption - self.energy_comsumption)
-            / self.last_refresh_time_stamp.elapsed().as_millis() as u64;
+        // To prevent sub overflow when resume from suspend or power metics reset
+        if current_energy_comsumption > self.energy_comsumption {
+            self.period_power = (current_energy_comsumption - self.energy_comsumption)
+                / self.last_refresh_time_stamp.elapsed().as_millis() as u64;
+        }
         self.energy_comsumption = current_energy_comsumption;
         self.last_refresh_time_stamp = std::time::Instant::now();
 
@@ -144,10 +147,7 @@ impl IntelCpu {
 }
 
 use lib::field::category::Category;
-use lib::field::fan_speed::TargetFanSpeed;
-use lib::field::{
-    CpuStatus, desc::Desc, fan_speed::FanSpeed, freq::Freq, power::Power, temp::Temp, usage::Usage,
-};
+use lib::field::{CpuStatus, desc::Desc, freq::Freq, power::Power, temp::Temp, usage::Usage};
 use lib::proto::{MsgCommand, MsgError};
 impl Component for IntelCpu {
     fn get_desc(&self) -> Desc {
@@ -160,7 +160,7 @@ impl Component for IntelCpu {
     fn handle_command(
         &mut self,
         command: &MsgCommand,
-        payload: &Vec<Vec<u8>>,
+        payload: &[Vec<u8>],
     ) -> Result<Vec<Vec<u8>>, MsgError> {
         let mut reply_payload = vec![];
         match command {

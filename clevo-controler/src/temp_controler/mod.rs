@@ -1,5 +1,4 @@
 use lib::field::{
-    category::Category,
     fan_speed::{FanIndex, TargetFanSpeed},
     temp::Temp,
 };
@@ -95,7 +94,7 @@ impl Controler {
 
     pub fn load_from_json(&mut self) {
         // read json config file
-        // parse json to Controler
+        // parse json to Controler config
         let cfg = std::fs::read_to_string(&self.cfg_path).unwrap();
         let cfg: ControlerCfg = serde_json::from_str(&cfg).unwrap();
         match cfg.cpu_method {

@@ -1,11 +1,4 @@
 use clevo_controlerd::component::cpu::intel::IntelCpu;
-use clevo_controlerd::lowlevel::accessor::fd::Fd;
-// use clevo_controlerd::{hardware::cpu::Cpu, service::core::Service};
-use lib::proto::*;
-use lib::stream::StreamListener;
-use std::thread;
-
-// use clevo_controlerd::component::gpu::Gpu;
 use clevo_controlerd::component::fan::Fan;
 use clevo_controlerd::service::core::Service;
 

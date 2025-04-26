@@ -56,12 +56,10 @@ pub struct CpuStatus {
 
 impl CpuStatus {
     pub fn serialize(&self) -> Result<Vec<u8>, FieldError> {
-        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+        Ok(bincode::encode_to_vec(self, bincode::config::standard())?)
     }
     pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
-        bincode::decode_from_slice(data, bincode::config::standard())
-            .map(|(status, _)| status)
-            .map_err(|e| FieldError::from(e))
+        Ok(bincode::decode_from_slice(data, bincode::config::standard())?.0)
     }
 }
 
@@ -76,12 +74,10 @@ pub struct GpuStatus {
 
 impl GpuStatus {
     pub fn serialize(&self) -> Result<Vec<u8>, FieldError> {
-        bincode::encode_to_vec(self, bincode::config::standard()).map_err(|e| FieldError::from(e))
+        Ok(bincode::encode_to_vec(self, bincode::config::standard())?)
     }
     pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
-        bincode::decode_from_slice(data, bincode::config::standard())
-            .map(|(status, _)| status)
-            .map_err(|e| FieldError::from(e))
+        Ok(bincode::decode_from_slice(data, bincode::config::standard())?.0)
     }
 }
 
@@ -101,8 +97,6 @@ pub struct SetGpuFanSpeed(pub fan_speed::TargetFanSpeed);
 pub struct ComponentList(pub HashMap<u8, Desc>);
 impl ComponentList {
     pub fn deserialize(data: &[u8]) -> Result<Self, FieldError> {
-        bincode::decode_from_slice(data, bincode::config::standard())
-            .map(|(list, _)| list)
-            .map_err(|e| FieldError::from(e))
+        Ok(bincode::decode_from_slice(data, bincode::config::standard())?.0)
     }
 }

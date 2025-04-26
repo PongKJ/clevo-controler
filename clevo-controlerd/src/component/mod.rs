@@ -4,7 +4,7 @@ pub mod fan;
 
 use cpu::CpuError;
 use lib::field::{FieldError, desc::Desc};
-use lib::proto::{Msg, MsgCommand, MsgError, MsgPacket};
+use lib::proto::{MsgCommand, MsgError};
 use lib::stream::StreamError;
 
 #[derive(Debug)]
@@ -56,7 +56,7 @@ pub trait Component {
     fn handle_command(
         &mut self,
         command: &MsgCommand,
-        payload: &Vec<Vec<u8>>,
+        payload: &[Vec<u8>],
     ) -> Result<Vec<Vec<u8>>, MsgError> {
         Err(MsgError::UnsupportedOperation(format!(
             "Operation not supported by the hardware:{}",

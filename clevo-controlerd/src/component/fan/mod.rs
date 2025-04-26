@@ -84,7 +84,7 @@ impl Component for Fan {
     fn handle_command(
         &mut self,
         command: &lib::proto::MsgCommand,
-        payload: &Vec<Vec<u8>>,
+        payload: &[Vec<u8>],
     ) -> Result<Vec<Vec<u8>>, lib::proto::MsgError> {
         let mut reply_payload = vec![];
         reply_payload.extend_from_slice(payload);

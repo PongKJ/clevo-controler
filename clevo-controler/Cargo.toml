@@ -7,10 +7,6 @@ edition = { workspace = true }
 name = "clevo-controler"
 path = "src/main.rs"
 
-# [[bin]]
-# name = "clevo-controler-cli"
-# path = "src/cli.rs"
-
 [dependencies]
 interprocess = { workspace = true }
 bincode = { workspace = true }
@@ -19,11 +15,8 @@ derive_more = { workspace = true }
 dotenv = { workspace = true }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0" }
-uuid = { version = "1.16.0", features = ["v4"] }
 lib = { path = "../lib" }
 ksni = { version = "0.3.1" }
 tokio = { version = "1.44.1" }
-iced = { version = "0.13.1", features = ["image"] }
-iced_aw = { version = "0.12.2" }
 
 [build-dependencies]
