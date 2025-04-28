@@ -1,5 +1,6 @@
-use clevo_controler::service::core::Service;
-use clevo_controler::temp_controler::Controler;
+use clevo_controller::service::core::Service;
+use clevo_controller::temp_controler::Controler;
+use std::env;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -11,7 +12,18 @@ async fn main() {
     let service = Arc::new(Mutex::new(service));
     let service_clone = service.clone();
     thread::spawn(move || {
-        let mut contorler = Controler::new("config.json");
+        let config_path = format!(
+            "{}{}",
+            env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "/configs.json"
+        );
+        dbg!(&config_path);
+        let mut contorler = Controler::new(&config_path);
         loop {
             let mut service = service_clone.lock().unwrap();
             service.accept(0, &mut contorler);
