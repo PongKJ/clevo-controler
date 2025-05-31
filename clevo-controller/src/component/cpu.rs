@@ -1,9 +1,14 @@
-use lib::field::freq::TargetFreq;
-use lib::field::{CpuStatus, freq::Freq, power::Power, temp::Temp, usage::Usage};
-use lib::proto::*;
-use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
-
+use lib::{
+    field::{
+        CpuStatus,
+        freq::{Freq, TargetFreq},
+        power::Power,
+        temp::Temp,
+        usage::Usage,
+    },
+    proto::*,
+};
+use std::sync::{Arc, Mutex, mpsc::Sender};
 use crate::component::{Component, ComponentError};
 
 #[derive(Debug)]
@@ -14,7 +19,6 @@ pub struct Cpu {
     usage: Usage,
     temp: Temp,
     power: Power,
-
     sender: Arc<Mutex<Sender<MsgBody>>>,
 }
 

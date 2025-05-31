@@ -22,7 +22,7 @@ pub struct IntelCpu {
 /// add_fd("/sys/class/powercap/intel-rapl:","name","package-0","energy_uj",5)
 fn add_fd(
     fd_list: &mut HashMap<String, fd::Fd>,
-    common_path: &str,
+    base_path: &str,
     key: &str,
     value: &str,
     key_to_add: &str,
@@ -30,22 +30,28 @@ fn add_fd(
 ) {
     let iter = 0..max_index;
     for index in iter {
-        let fd_path = format!("{}{}/{}", common_path, index, key);
-        let fd = fd::Fd::new(&fd_path, libc::O_RDONLY);
-        if let Ok(fd) = fd {
-            let read_value = fd.read(32);
-            if let Ok(read_value) = read_value {
-                if read_value == value {
-                    let fd_path = format!("{}{}/{}", common_path, index, key_to_add);
-                    let fd = fd::Fd::new(&fd_path, libc::O_RDONLY);
-                    if let Ok(fd) = fd {
-                        fd_list.insert(key_to_add.to_string(), fd);
-                        break;
+        let fd_path = format!("{}{}/{}", base_path, index, key);
+        match fd::Fd::new(&fd_path, libc::O_RDONLY) {
+            Ok(fd) => {
+                let read_value = fd.read(32);
+                if let Ok(read_value) = read_value {
+                    if read_value == value {
+                        let fd_path = format!("{}{}/{}", base_path, index, key_to_add);
+                        let fd = fd::Fd::new(&fd_path, libc::O_RDONLY);
+                        if let Ok(fd) = fd {
+                            fd_list.insert(key_to_add.to_string(), fd);
+                            break;
+                        }
                     }
                 }
             }
-        } else {
-            break;
+            Err(fd::FdError::OpenError) => {
+                panic!(
+                    "Failed to open fd, Try to run as root or check the path: {}",
+                    fd_path
+                );
+            }
+            _ => {}
         }
     }
 }
@@ -70,6 +76,7 @@ impl IntelCpu {
             period_power: 0,
             temp: 0,
         };
+        // TODO: Bad to hardcode these, a better way should be used
         add_fd(
             &mut cpu.fd_list,
             "/sys/class/powercap/intel-rapl:",
@@ -108,7 +115,7 @@ impl IntelCpu {
         let current_energy_comsumption = match self.fd_list.get("energy_uj") {
             Some(fd) => fd.read(32)?.parse()?,
             None => {
-                return Err(CpuError::FdNotFound);
+                return Err(CpuError::FdReadError);
             }
         };
         // To prevent sub overflow when resume from suspend or power metics reset
@@ -160,7 +167,7 @@ impl Component for IntelCpu {
     fn handle_command(
         &mut self,
         command: &MsgCommand,
-        payload: &[Vec<u8>],
+        _payload: &[Vec<u8>],
     ) -> Result<Vec<Vec<u8>>, MsgError> {
         let mut reply_payload = vec![];
         match command {
@@ -175,6 +182,7 @@ impl Component for IntelCpu {
             }
             MsgCommand::SetFreq => {
                 println!("SetFreq");
+                unimplemented!()
             }
             _ => {
                 MsgError::UnsupportedOperation(format!(

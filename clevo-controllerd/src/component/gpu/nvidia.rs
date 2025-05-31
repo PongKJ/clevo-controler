@@ -1,5 +1,3 @@
-use crate::lowlevel::middleware;
-
 #[derive(Debug)]
 pub enum GpuError {
     NvmlError,
@@ -19,7 +17,6 @@ pub struct NvidiaGpu {
     pub freq: u64,
     pub temp: u64,
     pub power: u64,
-    pub fan_speed: u64,
 }
 
 impl NvidiaGpu {
@@ -35,7 +32,6 @@ impl NvidiaGpu {
             temp: device.temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu)?
                 as u64,
             power: device.power_usage()? as u64,
-            fan_speed: 0,
             nvml,
         };
 
@@ -54,9 +50,6 @@ impl NvidiaGpu {
             device.temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu)? as u64;
         // refresh power
         self.power = device.power_usage()? as u64;
-        // refresh fan speed
-        let fan = middleware::fan::Fan::get_instance();
-        self.fan_speed = fan.get_fan_rpm(middleware::fan::FanIndex::GPU) as u64;
         Ok(())
     }
 }

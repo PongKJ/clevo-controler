@@ -1,22 +1,24 @@
 use std::fmt::Display;
-
 use crate::{
     field::FieldError,
     stream::{SocketStream, StreamError},
 };
 use bincode::{Decode, Encode};
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode, thiserror::Error)]
 pub enum ProtoError {
-    Io(String),    // IO error
+    #[error("IO Error: {0}")]
+    Io(String), // IO error
+    #[error("Parse Error: {0}")]
     Parse(String), // Parsing error
+    #[error("Unsupported Operation: {0}")]
     Other(String), // Other errors
 }
 
 impl From<StreamError> for ProtoError {
     fn from(err: StreamError) -> Self {
         match err {
-            StreamError::Io(msg) => ProtoError::Io(msg),
+            StreamError::Io(msg) => ProtoError::Io(msg.to_string()),
             StreamError::Other(msg) => ProtoError::Other(msg),
         }
     }
@@ -47,22 +49,30 @@ pub enum MsgMode {
     Notify,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode, thiserror::Error)]
 pub enum MsgError {
+    #[error("Field Error: {0}")]
     UnsupportedOperation(String), // Unsupported operation
-    InvalidCommand(String),       // Invalid parameter
-    DeviceError(String),          // Device error
-    Timeout(String),              // Timeout error
-    ServerError(String),          // Server error
-    Unknown(String),              // Unknown error
+    #[error("Field Error: {0}")]
+    InvalidCommand(String), // Invalid parameter
+    #[error("Field Error: {0}")]
+    DeviceError(String), // Device error
+    #[error("Field Error: {0}")]
+    Timeout(String), // Timeout error
+    #[error("Field Error: {0}")]
+    ServerError(String), // Server error
+    #[error("Field Error: {0}")]
+    Unknown(String), // Unknown error
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum MsgCommand {
-    GetComponentList, // get current enabled hardwares' index
+    // Get
+    GetComponentList, // Get current enabled hardwares' index
     GetStatus,
     GetFanSpeed,
 
+    // Set
     SetFreq,
     SetFanSpeed,
     SetFanAuto,
@@ -90,11 +100,9 @@ pub struct MsgHeader {
 
 // NOTE: std::mem::size_of considers the allignment padding, can't use it
 impl MsgHeader {
-    pub fn total_field_size() -> usize {
-        std::mem::size_of::<u8>()    // Size of `version`
+    const FIELD_SIZE: usize = std::mem::size_of::<u8>()    // Size of `version`
         + std::mem::size_of::<u64>() // Size of `timestamp`
-        + std::mem::size_of::<u32>() // Size of `length`
-    }
+        + std::mem::size_of::<u32>(); // Size of `length`
 
     pub fn new(version: u8, packet_length: usize) -> Self {
         Self {
@@ -209,7 +217,7 @@ pub struct Msg {
 type Result<T> = std::result::Result<T, ProtoError>;
 
 pub fn recv_msg(stream: &mut SocketStream) -> Result<MsgBody> {
-    let msg_header_bin = stream.read(MsgHeader::total_field_size())?;
+    let msg_header_bin = stream.read(MsgHeader::FIELD_SIZE)?;
     let (msg_header, _): (MsgHeader, _) = bincode::decode_from_slice(
         msg_header_bin.as_slice(),
         bincode::config::standard().with_fixed_int_encoding(),

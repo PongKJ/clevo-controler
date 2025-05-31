@@ -1,7 +1,10 @@
 use crate::{component::Component, lowlevel::accessor::ec};
-use lib::field::{
-    category::Category,
-    fan_speed::{FanIndex, FanSpeed, TargetFanSpeed},
+use lib::{
+    field::{
+        category::Category,
+        fan_speed::{FanIndex, FanSpeed, TargetFanSpeed},
+    },
+    proto::MsgCommand,
 };
 
 const EC_CPU_FAN_RPM_HI_ADDR: u8 = 0xD0;
@@ -53,7 +56,6 @@ impl Fan {
     }
 
     pub fn set_fan_speed(&self, category: Category, duty: u64) {
-        println!("Fan set_fan_speed duty: {}", duty);
         assert!(
             (0..=100).contains(&duty),
             "Duty cycle must be between 0 and 100"
@@ -66,7 +68,6 @@ impl Fan {
     }
 
     pub fn set_fan_auto(&self, category: Category) {
-        println!("Fan set_fan_auto");
         self.ec
             .cmd_write(EC_SET_FAN_SPEED_CMD, EC_SET_FAN_AUTO_ADDR, category as u8);
     }
@@ -91,7 +92,7 @@ impl Component for Fan {
         if !payload.is_empty() {
             let fan_index = FanIndex::deserialize(&payload[0]).unwrap();
             match command {
-                lib::proto::MsgCommand::GetFanSpeed => match fan_index {
+                MsgCommand::GetFanSpeed => match fan_index {
                     FanIndex::All => {
                         reply_payload.push(self.cpu_fan_speed.serialize().unwrap());
                         reply_payload.push(self.gpu_fan_speed.serialize().unwrap());
@@ -103,7 +104,7 @@ impl Component for Fan {
                         reply_payload.push(self.gpu_fan_speed.serialize().unwrap());
                     }
                 },
-                lib::proto::MsgCommand::SetFanSpeed => match fan_index {
+                MsgCommand::SetFanSpeed => match fan_index {
                     FanIndex::Cpu => {
                         let target_fan_speed = TargetFanSpeed::deserialize(&payload[1]).unwrap();
                         self.set_fan_speed(Category::Cpu, target_fan_speed.get_duty() as u64);
@@ -121,7 +122,7 @@ impl Component for Fan {
                         self.set_fan_speed(Category::Gpu, gpu_target_fan_speed.get_duty() as u64);
                     }
                 },
-                lib::proto::MsgCommand::SetFanAuto => match fan_index {
+                MsgCommand::SetFanAuto => match fan_index {
                     FanIndex::Cpu => {
                         self.set_fan_auto(Category::Cpu);
                     }

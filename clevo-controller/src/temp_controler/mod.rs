@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use lib::field::{
     fan_speed::{FanIndex, TargetFanSpeed},
     temp::Temp,
@@ -17,11 +19,15 @@ pub enum Method {
     TempRange,
     Pid,
 }
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ControlerError {
+    #[error("Invalid temperature value")]
     InvalidTemp,
+    #[error("Invalid fan speed value")]
     InvalidFanSpeed,
+    #[error("Invalid method for controler")]
     InvalidMethod,
+    #[error("Operation not supported by the hardware")]
     NotSupport,
 }
 
@@ -86,7 +92,7 @@ impl Controler {
             gpu_algo: Box::new(PidControler::new(ControlerCfg::default().gpu_pid_cfg)),
             gpu_current_temp: Temp::default(),
         };
-        if std::fs::exists(cfg_path).is_ok() {
+        if Path::new(cfg_path).exists() {
             controler.load_from_json();
         }
         controler
@@ -109,7 +115,18 @@ impl Controler {
                 self.cpu_algo = Box::new(pid);
             }
         }
-        // TODO: load gpu algo
+        match cfg.gpu_method {
+            Method::TableLookUp => {
+                unimplemented!()
+            }
+            Method::TempRange => {
+                unimplemented!()
+            }
+            Method::Pid => {
+                let pid = pid::PidControler::new(cfg.gpu_pid_cfg);
+                self.gpu_algo = Box::new(pid);
+            }
+        }
     }
 
     pub fn save_to_json(&self) {
@@ -129,12 +146,14 @@ impl Drop for Controler {
 
 impl Visitor for Controler {
     fn visit_cpu(&mut self, cpu: &crate::component::cpu::Cpu) {
-        // 访问 CPU 组件
-        // 在这里可以执行一些操作，例如获取 CPU 的频率、温度等信息
         self.cpu_current_temp = cpu.get_temp().clone();
     }
     fn visit_fan(&mut self, fan: &crate::component::fan::Fan) {
         let cpu_target_fan_speed = self.cpu_algo.update(&self.cpu_current_temp);
         fan.set_fan_speed(FanIndex::Cpu, TargetFanSpeed::new(cpu_target_fan_speed));
+    }
+    fn visit_gpu(&mut self, _gpu: &crate::component::gpu::Gpu) {
+        // TODO: Update GPU temperature
+        self.gpu_current_temp = Temp::default();
     }
 }

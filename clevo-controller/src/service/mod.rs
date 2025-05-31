@@ -2,12 +2,8 @@ pub mod core;
 
 use lib::proto::ProtoError;
 
+#[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
-    SocketError(String),
-}
-
-impl From<ProtoError> for ServiceError {
-    fn from(err: ProtoError) -> Self {
-        ServiceError::SocketError(format!("ProtoError occurred: {:?}", err))
-    }
+    #[error("Socket Error: {0}")]
+    SocketError(#[from] ProtoError),
 }

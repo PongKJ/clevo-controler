@@ -46,17 +46,6 @@ impl ControlerAlgo for PidControler {
         self.prev_error = error;
         let raw_output =
             self.cfg.kp * error + self.cfg.ki * self.integral + self.cfg.kd * derivative;
-
-        println!(
-            "current_temp: {}, target_temp: {}, error: {}, raw_output: {}",
-            current_temp, self.cfg.target_temp, error, raw_output
-        );
-        println!("integral: {}", self.integral);
-        // println!(
-        //     "raw_speed: {}, smoothed_speed: {}",
-        //     raw_speed, smoothed_speed
-        // );
-        // let clamped_speed = smoothed_speed.clamp(0.0, 100.0); // Clamp output between 0.0 and 1.0
         let raw_speed = (raw_output / 100.0).clamp(0.0, 100.0);
         let smoothed_speed = if let Some(prev_speed) = self.prev_speed {
             prev_speed + (raw_speed - prev_speed) * self.cfg.smoothing_factor

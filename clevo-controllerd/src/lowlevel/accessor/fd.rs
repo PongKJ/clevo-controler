@@ -1,24 +1,16 @@
-use std::ffi::CString;
-
 use libc::c_int;
+use std::ffi::CString;
 
 const BYTES_PER_READ: usize = 50;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FdError {
+    #[error("Failed to open file descriptor")]
     OpenError,
+    #[error("Failed to read from file descriptor")]
     ReadError,
+    #[error("Failed to write to file descriptor")]
     WriteError,
-}
-
-impl std::fmt::Display for FdError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FdError::OpenError => write!(f, "Failed to open file descriptor"),
-            FdError::ReadError => write!(f, "Failed to read from file descriptor"),
-            FdError::WriteError => write!(f, "Failed to write to file descriptor"),
-        }
-    }
 }
 
 type Result<T> = std::result::Result<T, FdError>;
@@ -71,7 +63,7 @@ impl Fd {
         Ok(str.trim().to_string())
     }
 
-    pub fn write(&self, buf: &[u8]) -> usize {
-        todo!()
+    pub fn write(&self, _buf: &[u8]) -> usize {
+        unimplemented!()
     }
 }

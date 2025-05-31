@@ -4,27 +4,21 @@ pub mod gpu;
 
 use cpu::Cpu;
 use fan::Fan;
+use gpu::Gpu;
 use lib::field::FieldError;
 use lib::proto::MsgCommand;
 use lib::stream::StreamError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ComponentError {
-    FieldError(String),  // Invalid field
-    QueryError(String),  // Error during querying hardware
+    #[error("Field Error: {0}")]
+    FieldError(#[from] FieldError), // Invalid field
+    #[error("Query Error: {0}")]
+    QueryError(#[from] StreamError), // Error during querying hardware
+    #[error("Component not found")]
     OperationNotSupport, // Operation not supported by the hardware
+    #[error("Bad reply from daemon")]
     BadReply,
-}
-
-impl From<FieldError> for ComponentError {
-    fn from(err: FieldError) -> Self {
-        ComponentError::FieldError(String::from(err))
-    }
-}
-impl From<StreamError> for ComponentError {
-    fn from(err: StreamError) -> Self {
-        ComponentError::QueryError(format!("Stream error: {}", err))
-    }
 }
 
 type Result<T> = std::result::Result<T, ComponentError>;
@@ -38,9 +32,8 @@ pub trait Component {
 }
 
 // 访问者模式, see https://en.wikipedia.org/wiki/Visitor_pattern,https://colobu.com/rust-patterns/patterns/behavioural/visitor.html
-// 访问者模式的目的是将数据结构与操作分离
 pub trait Visitor {
     fn visit_cpu(&mut self, cpu: &Cpu);
     fn visit_fan(&mut self, fan: &Fan);
-    // fn visit_gpu(&mut self, gpu: &Gpu);
+    fn visit_gpu(&mut self, gpu: &Gpu);
 }

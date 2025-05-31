@@ -2,25 +2,12 @@ use interprocess::local_socket::{
     GenericFilePath, GenericNamespaced, ListenerOptions, Stream, prelude::*,
 };
 use std::io::prelude::*;
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum StreamError {
-    Io(String),
+    #[error("IO Error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Unknown Error: {0}")]
     Other(String),
-}
-
-impl std::fmt::Display for StreamError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            StreamError::Io(err) => write!(f, "IO Error: {}", err),
-            StreamError::Other(err) => write!(f, "Unknow Error: {}", err),
-        }
-    }
-}
-
-impl From<std::io::Error> for StreamError {
-    fn from(err: std::io::Error) -> Self {
-        StreamError::Io(err.to_string())
-    }
 }
 
 type Result<T> = std::result::Result<T, StreamError>;
@@ -51,7 +38,7 @@ impl SocketStream {
         }
     }
 
-    pub fn read(&mut self, length:usize) -> Result<Vec<u8>> {
+    pub fn read(&mut self, length: usize) -> Result<Vec<u8>> {
         let mut msg = vec![0; length]; // Pre-allocate a buffer of the specified length
         self.0.read_exact(&mut msg)?;
         Ok(msg)
@@ -78,7 +65,7 @@ impl StreamListener {
                 let stream_client = SocketStream(stream);
                 Ok(stream_client)
             }
-            Err(err) => Err(StreamError::Io(err.to_string())),
+            Err(err) => Err(StreamError::Io(err)),
         }
     }
 }

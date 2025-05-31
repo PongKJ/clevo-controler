@@ -1,23 +1,17 @@
-use crate::component::Component;
-use crate::component::Visitor;
-use crate::component::cpu::Cpu;
-use crate::component::fan::Fan;
-use lib::field::ComponentList;
-use lib::field::category::Category;
-use lib::field::desc::Desc;
-use lib::proto::MsgBody;
-use lib::proto::MsgCommand;
-use lib::proto::MsgMode;
-use lib::proto::MsgPacket;
-use lib::proto::ProtoError;
-use lib::proto::recv_msg;
-use lib::proto::send_msg;
-use lib::stream::SocketStream;
-
-use std::collections::HashMap;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
+use crate::component::{Component, Visitor, cpu::Cpu, fan::Fan};
+use lib::{
+    field::{ComponentList, category::Category, desc::Desc},
+    proto::{MsgBody, MsgCommand, MsgMode, MsgPacket, ProtoError, recv_msg, send_msg},
+    stream::SocketStream,
+};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc, Mutex,
+        mpsc::{Receiver, Sender},
+    },
+    thread::JoinHandle,
+};
 
 type Result<T> = std::result::Result<T, ProtoError>;
 
@@ -140,7 +134,7 @@ impl Service {
                     components.insert(*id_num, Box::new(cpu));
                 }
                 Category::Gpu => {
-                    todo!()
+                    unimplemented!()
                 }
                 Category::Fan => {
                     let fan = Fan::new(*id_num, Arc::clone(&self.sender));

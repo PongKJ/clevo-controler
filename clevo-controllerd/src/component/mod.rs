@@ -1,35 +1,35 @@
 pub mod cpu;
 pub mod fan;
-// pub mod gpu;
+pub mod gpu;
 
 use cpu::CpuError;
 use lib::field::{FieldError, desc::Desc};
 use lib::proto::{MsgCommand, MsgError};
 use lib::stream::StreamError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ComponentError {
+    #[error("lowerlevel error: {0}")]
     LowerlevelError(String), // Error during execution
-    FieldError(String),      // Invalid field
-    QueryError(String),      // Error during querying hardware
-    OperationNotSupport,     // Operation not supported by the hardware
+    #[error("field error: {0}")]
+    FieldError(String), // Invalid field
+    #[error("query error: {0}")]
+    QueryError(#[from] StreamError), // Error during querying hardware
+    #[error("operation not supported by the hardware")]
+    OperationNotSupport, // Operation not supported by the hardware
+    #[error("bad reply from daemon")]
     BadReply,
 }
 
 impl From<CpuError> for crate::component::ComponentError {
     fn from(err: CpuError) -> Self {
-        crate::component::ComponentError::LowerlevelError(String::from(err))
+        crate::component::ComponentError::LowerlevelError(err.to_string())
     }
 }
 
 impl From<FieldError> for ComponentError {
     fn from(err: FieldError) -> Self {
         ComponentError::FieldError(String::from(err))
-    }
-}
-impl From<StreamError> for ComponentError {
-    fn from(err: StreamError) -> Self {
-        ComponentError::QueryError(format!("Stream error: {}", err))
     }
 }
 impl From<bincode::error::EncodeError> for ComponentError {

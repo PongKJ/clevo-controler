@@ -1,10 +1,14 @@
 use crate::component::{Component, ComponentError};
-use lib::field::ComponentList;
-use lib::proto::*;
-use lib::stream::{SocketStream, StreamListener};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
+use lib::{
+    field::ComponentList,
+    proto::*,
+    stream::{SocketStream, StreamListener},
+};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    thread::JoinHandle,
+};
 
 type Result<T> = std::result::Result<T, ProtoError>;
 
@@ -55,6 +59,7 @@ impl Service {
                 std::thread::sleep(std::time::Duration::from_secs(3));
             }
         });
+        println!("hardware monitor started");
         Ok(handle)
     }
     pub fn spawn_msg_handler(&mut self) -> Result<JoinHandle<()>> {
@@ -123,6 +128,7 @@ impl Service {
                 }
             }
         });
+        println!("Message handler started, waiting for connections...");
         Ok(handle)
     }
 }

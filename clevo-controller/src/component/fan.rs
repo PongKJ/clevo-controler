@@ -9,7 +9,6 @@ pub struct Fan {
     id_num: u8,
     cpu_fan_speed: FanSpeed,
     gpu_fan_speed: FanSpeed,
-
     sender: Arc<Mutex<Sender<MsgBody>>>,
 }
 

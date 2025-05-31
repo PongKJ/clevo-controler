@@ -1,6 +1,7 @@
-use clevo_controllerd::component::cpu::intel::IntelCpu;
-use clevo_controllerd::component::fan::Fan;
-use clevo_controllerd::service::core::Service;
+use clevo_controllerd::{
+    component::{cpu::intel::IntelCpu, fan::Fan},
+    service::core::Service,
+};
 
 fn main() {
     let mut service = Service::new("clevo-controler.sock").expect("Failed to create service");

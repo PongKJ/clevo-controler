@@ -469,6 +469,7 @@ dependencies = [
  "bincode",
  "derive_more",
  "interprocess",
+ "thiserror 2.0.12",
 ]
 
 [[package]]

@@ -1,39 +1,22 @@
 pub mod intel;
 use crate::lowlevel::accessor::fd;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum CpuError {
+    #[error("get system info error")]
     SysInfoError,
-    FdError(fd::FdError),
+    #[error("fd open error: {0}")]
+    FdError(#[from] fd::FdError),
+    #[error("fd not found")]
     FdNotFound,
-    ParseError,
+    #[error("fd read date error")]
+    FdReadError,
+    #[error("parse int value error")]
+    ParseError(#[from] std::num::ParseIntError),
+    #[error("request too frequent")]
     TooFrequent,
+    #[error("timer interval too large, may overflow")]
     Overflow,
-}
-
-impl From<CpuError> for String {
-    fn from(err: CpuError) -> Self {
-        match err {
-            CpuError::SysInfoError => "SysInfoError".to_string(),
-            CpuError::FdError(err) => format!("FdError: {}", err),
-            CpuError::FdNotFound => "FdNotFound".to_string(),
-            CpuError::ParseError => "ParseError".to_string(),
-            CpuError::TooFrequent => "TooFrequent".to_string(),
-            CpuError::Overflow => "Overflow".to_string(),
-        }
-    }
-}
-
-impl From<fd::FdError> for CpuError {
-    fn from(err: fd::FdError) -> Self {
-        CpuError::FdError(err)
-    }
-}
-
-impl From<std::num::ParseIntError> for CpuError {
-    fn from(_err: std::num::ParseIntError) -> Self {
-        CpuError::ParseError
-    }
 }
 
 type Result<T> = std::result::Result<T, CpuError>;

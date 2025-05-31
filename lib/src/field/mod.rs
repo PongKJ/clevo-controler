@@ -10,11 +10,13 @@ use desc::Desc;
 use std::collections::HashMap;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FieldError {
     InvalidValue(String), // Invalid value for a field
     ParseError(String),   // Error during parsing
 }
+
+impl std::error::Error for FieldError {}
 
 impl Display for FieldError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
